@@ -12,6 +12,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -34,6 +35,21 @@ INTERESTING_LABELS = {
     "contributions welcome",
     "starter",
 }
+ACTIONABLE_TITLE_TERMS = (
+    "bug",
+    "crash",
+    "error",
+    "fail",
+    "broken",
+    "incorrect",
+    "does not",
+    "doesn't",
+    "cannot",
+    "can't",
+    "ignored",
+    "missing",
+    "regression",
+)
 TOKEN_PATTERNS = (
     re.compile(r"\b(?:gh[opusr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"),
     re.compile(r"(?i)\b(Bearer|token)\s+[A-Za-z0-9._~+\-/=]{12,}"),
@@ -46,6 +62,24 @@ SEARCH_QUALIFIER_RE = re.compile(
     r"(?i)(?:^|\s)(?:repo|org|user|is|state|label|in|sort|language|type):"
 )
 SEARCH_BOOLEAN_RE = re.compile(r"(?i)(?:^|\s)(?:AND|OR|NOT)(?:\s|$)")
+KNOWN_COMMANDS = (
+    "git",
+    "gh",
+    "python3",
+    "uv",
+    "node",
+    "npm",
+    "pnpm",
+    "bun",
+    "cargo",
+    "rustc",
+    "go",
+    "dotnet",
+    "jq",
+    "curl",
+)
+SETUP_LEVEL_SCORE = {"light": 22, "moderate": 14, "heavy": 4}
+DIFFICULTY_SCORE = {"low": 10, "medium": 5, "high": 0}
 
 
 class RadarError(RuntimeError):
@@ -185,6 +219,99 @@ def nonnegative_int(value: Any) -> int:
     return max(0, parsed)
 
 
+def normalize_platform(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"darwin", "mac", "macos"}:
+        return "macos"
+    if normalized.startswith("win"):
+        return "windows"
+    if normalized == "linux":
+        return "linux"
+    return normalized or "unknown"
+
+
+def detect_local_environment() -> dict[str, Any]:
+    """Detect only non-sensitive capabilities used for local-fit ranking."""
+    commands = {command: bool(shutil.which(command)) for command in KNOWN_COMMANDS}
+    commands["python3"] = commands["python3"] or any(
+        shutil.which(alias) for alias in ("python", "py")
+    )
+    return {
+        "platform": normalize_platform(platform.system()),
+        "architecture": platform.machine().lower() or "unknown",
+        "python_version": (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        ),
+        "commands": commands,
+    }
+
+
+def evaluate_local_fit(
+    seed_item: dict[str, Any], environment: dict[str, Any]
+) -> dict[str, Any]:
+    setup = seed_item.get("setup") or {}
+    level = str(setup.get("level") or "moderate").lower()
+    required_commands = [str(item) for item in setup.get("required_commands") or []]
+    platforms = [normalize_platform(str(item)) for item in setup.get("platforms") or []]
+    current_platform = normalize_platform(str(environment.get("platform") or "unknown"))
+    available_commands = environment.get("commands") or {}
+
+    blockers: list[str] = []
+    missing_commands = [
+        command for command in required_commands if not available_commands.get(command, False)
+    ]
+    blockers.extend(f"缺少命令：{command}" for command in missing_commands)
+    if platforms and current_platform not in platforms:
+        blockers.append(f"不支持当前平台 {current_platform}")
+
+    compatible = not blockers
+    score = SETUP_LEVEL_SCORE.get(level, 0)
+    if compatible:
+        score += 8
+    else:
+        score = 0
+    reasons = [f"{level} 级本地准备"]
+    if compatible:
+        reasons.append("本机必需命令齐全")
+    return {
+        "compatible": compatible,
+        "score": min(score, 30),
+        "setup_level": level,
+        "required_commands": required_commands,
+        "missing_commands": missing_commands,
+        "blockers": blockers,
+        "reasons": reasons,
+    }
+
+
+def candidate_priority(
+    seed_item: dict[str, Any], environment: dict[str, Any]
+) -> tuple[int, int, int, str]:
+    fit = evaluate_local_fit(seed_item, environment)
+    difficulty = str(seed_item.get("difficulty") or "high").lower()
+    skill_rank = 0 if seed_item.get("category") == "Agent Skill" else 1
+    return (
+        0 if fit["compatible"] else 1,
+        -fit["score"] - DIFFICULTY_SCORE.get(difficulty, 0),
+        skill_rank,
+        str(seed_item.get("repo") or "").lower(),
+    )
+
+
+def extend_environment_for_seed(
+    environment: dict[str, Any], seed: dict[str, Any]
+) -> dict[str, Any]:
+    extended = {**environment, "commands": dict(environment.get("commands") or {})}
+    for item in seed.get("repositories") or []:
+        setup = item.get("setup") if isinstance(item, dict) else None
+        if not isinstance(setup, dict):
+            continue
+        for command in setup.get("required_commands") or []:
+            if command not in extended["commands"]:
+                extended["commands"][command] = bool(shutil.which(command))
+    return extended
+
+
 def normalize_license(metadata: dict[str, Any]) -> str | None:
     license_data = metadata.get("license")
     if isinstance(license_data, dict):
@@ -265,6 +392,10 @@ def issue_signal_score(issue: dict[str, Any]) -> tuple[int, list[str]]:
     if "bug" in labels:
         score += 10
         reasons.append("bug")
+    title = str(issue.get("title") or "").lower()
+    if any(term in title for term in ACTIONABLE_TITLE_TERMS):
+        score += 15
+        reasons.append("标题包含可复现症状")
     if not issue.get("assignees"):
         score += 10
         reasons.append("未分配")
@@ -294,6 +425,18 @@ def normalize_issue(issue: dict[str, Any]) -> dict[str, Any]:
     url = issue.get("url") or issue.get("html_url")
     if not isinstance(title, str) or not isinstance(url, str):
         raise RadarError("Issue 缺少有效标题或 URL")
+    linked_pull_requests: list[str] | None = None
+    if "closedByPullRequestsReferences" in issue:
+        raw_links = issue.get("closedByPullRequestsReferences")
+        if not isinstance(raw_links, list):
+            raise RadarError("Issue 关联 PR 字段不是数组")
+        linked_pull_requests = []
+        for pull_request in raw_links:
+            if not isinstance(pull_request, dict) or not isinstance(
+                pull_request.get("url"), str
+            ):
+                raise RadarError("Issue 关联 PR 数据格式异常")
+            linked_pull_requests.append(pull_request["url"])
     return {
         "number": number,
         "title": title,
@@ -301,6 +444,7 @@ def normalize_issue(issue: dict[str, Any]) -> dict[str, Any]:
         "labels": labels,
         "updated_at": issue.get("updatedAt") or issue.get("updated_at"),
         "assignees": [name for name in normalized_assignees if name],
+        "linked_pull_requests": linked_pull_requests,
     }
 
 
@@ -314,50 +458,77 @@ def fetch_repository(repo: str) -> dict[str, Any]:
     return metadata
 
 
+def public_issue_search(repo: str, search_terms: str, limit: int) -> list[dict[str, Any]]:
+    """Read up to GitHub Search's 1,000-result cap in 100-item pages."""
+    items: list[dict[str, Any]] = []
+    per_page = 100
+    for page in range(1, min(10, (limit + per_page - 1) // per_page) + 1):
+        public_terms = f"repo:{repo} is:issue is:open {search_terms}".strip()
+        query = urllib.parse.quote(public_terms)
+        search_result = api_json(
+            f"search/issues?q={query}&sort=updated&order=desc&per_page={per_page}&page={page}",
+            timeout=60,
+        )
+        if not isinstance(search_result, dict) or not isinstance(
+            search_result.get("items"), list
+        ):
+            raise RadarError(f"Issue 搜索结果格式异常：{repo}")
+        page_items = search_result["items"]
+        items.extend(page_items)
+        if len(page_items) < per_page or len(items) >= limit:
+            break
+    return items[:limit]
+
+
 def fetch_issues(repo: str, limit: int = 10) -> list[dict[str, Any]]:
     repo = validate_repo_name(repo)
-    request_limit = min(100, max(30, limit * 5))
+    # GitHub issue search exposes at most 1,000 results. Ask gh to paginate to
+    # that cap, then remove assigned/linked/non-actionable rows before applying
+    # the caller's small output limit.
+    request_limit = 1000
     label_query = (
-        'sort:updated-desc (label:"good first issue" OR label:"help wanted" '
-        'OR label:bug OR label:"ready for work" OR label:"contributions welcome" '
+        '(label:"good first issue" OR label:"help wanted" OR label:bug '
+        'OR label:"ready for work" OR label:"contributions welcome" '
         'OR label:starter)'
     )
-    try:
-        raw = gh_json(
-            [
-                "issue",
-                "list",
-                "-R",
-                repo,
-                "--state",
-                "open",
-                "--limit",
-                str(request_limit),
-                "--search",
-                label_query,
-                "--json",
-                "number,title,url,labels,updatedAt,assignees",
-            ],
-            timeout=60,
+    raw_by_number: dict[int, dict[str, Any]] = {}
+    for search_terms in (label_query, ""):
+        gh_search = f"sort:updated-desc {search_terms}".strip()
+        try:
+            raw = gh_json(
+                [
+                    "issue",
+                    "list",
+                    "-R",
+                    repo,
+                    "--state",
+                    "open",
+                    "--limit",
+                    str(request_limit),
+                    "--search",
+                    gh_search,
+                    "--json",
+                    "number,title,url,labels,updatedAt,assignees,closedByPullRequestsReferences",
+                ],
+                timeout=60,
+            )
+        except RadarError:
+            raw = public_issue_search(repo, search_terms, request_limit)
+        if not isinstance(raw, list):
+            raise RadarError(f"Issue 列表格式异常：{repo}")
+        for item in raw:
+            normalized = normalize_issue(item)
+            raw_by_number[normalized["number"]] = normalized
+
+    interesting = [
+        issue
+        for issue in raw_by_number.values()
+        if not issue.get("linked_pull_requests")
+        and (
+            label_names(issue) & INTERESTING_LABELS
+            or any(term in issue["title"].lower() for term in ACTIONABLE_TITLE_TERMS)
         )
-    except RadarError:
-        query = urllib.parse.quote(
-            f'repo:{repo} is:issue is:open '
-            '(label:"good first issue" OR label:"help wanted" OR label:bug '
-            'OR label:"ready for work" OR label:"contributions welcome" '
-            'OR label:starter)'
-        )
-        search_result = api_json(
-            f"search/issues?q={query}&sort=updated&order=desc&per_page={request_limit}",
-            timeout=60,
-        )
-        if not isinstance(search_result, dict) or not isinstance(search_result.get("items"), list):
-            raise RadarError(f"Issue 搜索结果格式异常：{repo}")
-        raw = search_result["items"]
-    if not isinstance(raw, list):
-        raise RadarError(f"Issue 列表格式异常：{repo}")
-    issues = [normalize_issue(item) for item in raw]
-    interesting = [issue for issue in issues if label_names(issue) & INTERESTING_LABELS]
+    ]
     ranked = []
     for issue in interesting:
         score, reasons = issue_signal_score(issue)
@@ -392,6 +563,22 @@ def load_seed(path: Path) -> dict[str, Any]:
         if repo.lower() in seen:
             raise RadarError(f"候选池仓库重复：{repo}")
         seen.add(repo.lower())
+        difficulty = item.get("difficulty")
+        if difficulty not in {"low", "medium", "high"}:
+            raise RadarError(f"候选池 difficulty 无效：{repo}")
+        setup = item.get("setup")
+        if not isinstance(setup, dict):
+            raise RadarError(f"候选池 setup 无效：{repo}")
+        if setup.get("level") not in SETUP_LEVEL_SCORE:
+            raise RadarError(f"候选池 setup.level 无效：{repo}")
+        required_commands = setup.get("required_commands")
+        if not isinstance(required_commands, list) or not all(
+            isinstance(command, str) and command for command in required_commands
+        ):
+            raise RadarError(f"候选池 required_commands 无效：{repo}")
+        platforms = setup.get("platforms")
+        if not isinstance(platforms, list) or not platforms:
+            raise RadarError(f"候选池 platforms 无效：{repo}")
     return data
 
 
@@ -419,7 +606,125 @@ def inspect_repository(repo: str, max_issues: int) -> dict[str, Any]:
     }
 
 
-def scan(seed: dict[str, Any], max_repos: int, max_issues: int, language: str | None) -> dict[str, Any]:
+def issue_scope_score(issue: dict[str, Any]) -> tuple[int, list[str]]:
+    """Prefer reproducible behavior bugs over repository metadata chores."""
+    title = str(issue.get("title") or "").lower()
+    labels = set(issue.get("labels") or [])
+    adjustment = 0
+    reasons: list[str] = []
+    if "bug" in labels:
+        adjustment += 15
+        reasons.append("行为缺陷")
+    runtime_terms = (
+        *ACTIONABLE_TITLE_TERMS,
+        "install",
+        "validator",
+        "symlink",
+        "local path",
+        "state",
+    )
+    if any(term in title for term in runtime_terms):
+        adjustment += 10
+        reasons.append("标题包含可复现的运行时症状")
+    metadata_terms = (
+        "missing license",
+        "readme typo",
+        "badge",
+        "spelling",
+        "re-index",
+        "re-audit",
+        "community video",
+        "skills.sh",
+    )
+    if any(term in title for term in metadata_terms):
+        adjustment -= 50
+        reasons.append("低价值元数据或排版事项降权")
+    return adjustment, reasons
+
+
+def select_recommended_opportunity(
+    repositories: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    candidates: list[dict[str, Any]] = []
+    for repository in repositories:
+        fit = repository.get("local_fit") or {}
+        if not fit.get("compatible") or repository.get("archived") or repository.get("disabled"):
+            continue
+        if repository.get("license") in {None, "NOASSERTION", "Other"}:
+            continue
+        difficulty = str((repository.get("seed") or {}).get("difficulty") or "high")
+        category = str((repository.get("seed") or {}).get("category") or "")
+        for issue in repository.get("issue_leads") or []:
+            if issue.get("assignees"):
+                continue
+            linked_pull_requests = issue.get("linked_pull_requests")
+            if linked_pull_requests is None or linked_pull_requests:
+                continue
+            labels = set(issue.get("labels") or [])
+            if "breaking api change" in labels:
+                continue
+            updated_days = age_days(issue.get("updated_at"))
+            if updated_days is not None and updated_days > 180:
+                continue
+            scope_adjustment, scope_reasons = issue_scope_score(issue)
+            if scope_adjustment < 0:
+                continue
+            selection_score = (
+                nonnegative_int(repository.get("repository_signal_score"))
+                + nonnegative_int(issue.get("signal_score"))
+                + nonnegative_int(fit.get("score"))
+                + DIFFICULTY_SCORE.get(difficulty, 0)
+                + (10 if category == "Agent Skill" else 0)
+                + scope_adjustment
+            )
+            candidates.append(
+                {
+                    "status": "needs_verification",
+                    "repo": repository["repo"],
+                    "issue": {
+                        key: issue.get(key)
+                        for key in ("number", "title", "url", "labels", "updated_at")
+                    },
+                    "selection_score": selection_score,
+                    "why": [
+                        *fit.get("reasons", []),
+                        *issue.get("signal_reasons", []),
+                        *scope_reasons,
+                        *(
+                            ["Agent Skill 仓库优先"]
+                            if category == "Agent Skill"
+                            else []
+                        ),
+                        f"仓库线索分 {repository.get('repository_signal_score', 0)}/40",
+                    ],
+                    "next_step": (
+                        "先阅读完整 Issue、评论、贡献政策和相近 PR，再在当前默认分支"
+                        "复现；查重与 RED 测试通过前不得开始修改。"
+                    ),
+                }
+            )
+    if not candidates:
+        return None
+    candidates.sort(
+        key=lambda item: (
+            -item["selection_score"],
+            tuple(-part for part in time_rank(item["issue"].get("updated_at"))),
+            item["repo"].lower(),
+            item["issue"]["number"],
+        )
+    )
+    return candidates[0]
+
+
+def scan(
+    seed: dict[str, Any],
+    max_repos: int,
+    max_issues: int,
+    language: str | None,
+    environment: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if environment is None:
+        environment = extend_environment_for_seed(detect_local_environment(), seed)
     items = seed["repositories"]
     if language:
         items = [
@@ -427,9 +732,18 @@ def scan(seed: dict[str, Any], max_repos: int, max_issues: int, language: str | 
             for item in items
             if str(item.get("language", "")).lower() == language.lower()
         ]
+    items = sorted(items, key=lambda item: candidate_priority(item, environment))
     results: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
-    for seed_item in items[:max_repos]:
+    skipped: list[dict[str, Any]] = []
+    compatible_items: list[dict[str, Any]] = []
+    for seed_item in items:
+        local_fit = evaluate_local_fit(seed_item, environment)
+        if local_fit["compatible"]:
+            compatible_items.append(seed_item)
+        else:
+            skipped.append({"repo": seed_item["repo"], "local_fit": local_fit})
+    for seed_item in compatible_items[:max_repos]:
         repo = seed_item["repo"]
         try:
             result = inspect_repository(repo, max_issues)
@@ -439,6 +753,7 @@ def scan(seed: dict[str, Any], max_repos: int, max_issues: int, language: str | 
                 key: seed_item.get(key)
                 for key in ("category", "difficulty", "reason", "stars_snapshot")
             }
+            result["local_fit"] = evaluate_local_fit(seed_item, environment)
             result["best_issue_signal_score"] = max(
                 (issue["signal_score"] for issue in result["issue_leads"]),
                 default=0,
@@ -449,6 +764,7 @@ def scan(seed: dict[str, Any], max_repos: int, max_issues: int, language: str | 
     results.sort(
         key=lambda item: (
             -item["best_issue_signal_score"],
+            -item["local_fit"]["score"],
             -item["repository_signal_score"],
             item["repo"].lower(),
         )
@@ -457,11 +773,14 @@ def scan(seed: dict[str, Any], max_repos: int, max_issues: int, language: str | 
         "schema_version": 1,
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source_snapshot_date": seed.get("snapshot_date"),
+        "local_environment": environment,
         "warning": (
-            "线索分只用于排序。提交代码前必须阅读贡献政策、检查重复项、"
-            "在当前默认分支复现问题并运行项目原生测试。"
+            "推荐项只是下一步深挖对象，不是可直接提交的 PR。提交代码前必须阅读"
+            "贡献政策、检查重复项、在当前默认分支复现问题并运行项目原生测试。"
         ),
         "repositories": results,
+        "recommended_opportunity": select_recommended_opportunity(results),
+        "skipped_repositories": skipped,
         "errors": errors,
     }
 
@@ -486,9 +805,52 @@ def markdown_report(report: dict[str, Any]) -> str:
         "",
         f"> {report['warning']}",
         "",
+    ]
+    environment = report.get("local_environment") or {}
+    if environment:
+        available = sorted(
+            command for command, present in (environment.get("commands") or {}).items() if present
+        )
+        lines.extend(
+            [
+                "## 本机适配",
+                "",
+                f"- 平台：`{markdown_text(environment.get('platform'))}/"
+                f"{markdown_text(environment.get('architecture'))}`",
+                f"- 可用命令：{markdown_text(', '.join(available) or '未检测到')}",
+                "",
+            ]
+        )
+    recommendation = report.get("recommended_opportunity")
+    lines.extend(["## 建议优先验证的 1 个机会", ""])
+    if recommendation:
+        issue = recommendation["issue"]
+        lines.extend(
+            [
+                f"**{markdown_text(recommendation['repo'])} #{issue['number']}**："
+                f"[{markdown_text(issue['title'])}]({markdown_text(issue['url'])})",
+                "",
+                f"- 选择分：{recommendation['selection_score']}（只用于排序）",
+                f"- 原因：{markdown_text('；'.join(recommendation.get('why') or []))}",
+                f"- 下一步：{markdown_text(recommendation['next_step'])}",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "本次没有找到同时满足本机依赖、许可证、未分配 Issue 和基础质量条件的机会。",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+        "## 扫描结果",
+        "",
         "| 仓库 | 语言 | Stars | 许可证 | 仓库线索分 | 最佳 Issue 线索分 |",
         "|---|---:|---:|---|---:|---:|",
-    ]
+        ]
+    )
     for item in report["repositories"]:
         repo_name = markdown_text(item["repo"])
         repo_url = item.get("url") or f"https://github.com/{item['repo']}"
@@ -663,7 +1025,11 @@ def doctor() -> tuple[int, dict[str, Any]]:
         for item in checks
         if item["name"] in {*required, "python", "github_auth", "git_identity"}
     )
-    return (0 if ok and gh_ok and git_identity_ok else 1), {"ok": ok, "checks": checks}
+    return (0 if ok and gh_ok and git_identity_ok else 1), {
+        "ok": ok,
+        "checks": checks,
+        "local_environment": detect_local_environment(),
+    }
 
 
 def normalized_path(path: Path) -> Path:

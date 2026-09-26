@@ -101,6 +101,24 @@ class InstallerTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 installer.validate_skill_tree(root)
 
+    def test_validation_rejects_invalid_setup_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "scripts").mkdir()
+            (root / "references").mkdir()
+            (root / "SKILL.md").write_text(
+                "---\nname: open-source-pr-contributor\ndescription: x\n---\nbody\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "contribution_radar.py").write_text("", encoding="utf-8")
+            (root / "references" / "repository-pool.json").write_text(
+                '{"repositories":[{"repo":"owner/repo","difficulty":"low",'
+                '"setup":{"level":"tiny","required_commands":[],"platforms":["linux"]}}]}',
+                encoding="utf-8",
+            )
+            with self.assertRaises(RuntimeError):
+                installer.validate_skill_tree(root)
+
     def test_failed_force_update_restores_previous_installation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "open-source-pr-contributor"

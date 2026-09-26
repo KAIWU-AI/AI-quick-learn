@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "contribution_radar.py"
 SPEC = importlib.util.spec_from_file_location("contribution_radar", SCRIPT)
@@ -110,10 +111,326 @@ class ContributionRadarTests(unittest.TestCase):
         repositories = data["repositories"]
         self.assertGreaterEqual(len(repositories), 20)
         self.assertEqual(len({item["repo"].lower() for item in repositories}), len(repositories))
+        skill_repositories = [item for item in repositories if item["category"] == "Agent Skill"]
+        self.assertGreaterEqual(len(skill_repositories), 6)
+        removed_heavy_repositories = {
+            "openclaw/openclaw",
+            "pydantic/pydantic",
+            "astral-sh/ruff",
+            "langchain-ai/langchain",
+            "run-llama/llama_index",
+            "huggingface/transformers",
+            "openai/codex",
+            "go-gitea/gitea",
+        }
+        self.assertTrue(
+            removed_heavy_repositories.isdisjoint(item["repo"] for item in repositories)
+        )
         for item in repositories:
             self.assertTrue(radar.validate_repo_name(item["repo"]))
             self.assertIn(item["difficulty"], {"low", "medium", "high"})
             self.assertGreaterEqual(item["stars_snapshot"], 0)
+            self.assertIn(item["setup"]["level"], {"light", "moderate", "heavy"})
+            self.assertIsInstance(item["setup"]["required_commands"], list)
+
+    def test_local_fit_rejects_missing_tools_and_platforms(self) -> None:
+        environment = {
+            "platform": "macos",
+            "architecture": "arm64",
+            "commands": {"python3": True, "node": False, "go": False},
+        }
+        missing_tool = radar.evaluate_local_fit(
+            {
+                "setup": {
+                    "level": "moderate",
+                    "required_commands": ["node"],
+                    "platforms": ["linux", "macos", "windows"],
+                }
+            },
+            environment,
+        )
+        self.assertFalse(missing_tool["compatible"])
+        self.assertIn("缺少命令：node", missing_tool["blockers"])
+
+        wrong_platform = radar.evaluate_local_fit(
+            {
+                "setup": {
+                    "level": "light",
+                    "required_commands": ["python3"],
+                    "platforms": ["linux"],
+                }
+            },
+            environment,
+        )
+        self.assertFalse(wrong_platform["compatible"])
+        self.assertIn("不支持当前平台 macos", wrong_platform["blockers"])
+
+    def test_detect_environment_accepts_python_command_alias(self) -> None:
+        def fake_which(command: str) -> str | None:
+            return f"/usr/bin/{command}" if command in {"git", "gh", "python"} else None
+
+        with mock.patch.object(radar.shutil, "which", side_effect=fake_which):
+            environment = radar.detect_local_environment()
+        self.assertTrue(environment["commands"]["python3"])
+
+    def test_recommendation_prefers_runtime_bug_over_metadata_cleanup(self) -> None:
+        common = {
+            "archived": False,
+            "disabled": False,
+            "license": "MIT",
+            "repository_signal_score": 40,
+            "local_fit": {"compatible": True, "score": 30, "reasons": ["本机依赖齐全"]},
+            "seed": {"difficulty": "low"},
+        }
+        repositories = [
+            {
+                **common,
+                "repo": "owner/metadata",
+                "issue_leads": [
+                    {
+                        "number": 1,
+                        "title": "Missing LICENSE file",
+                        "url": "https://github.com/owner/metadata/issues/1",
+                        "labels": ["bug"],
+                        "assignees": [],
+                        "linked_pull_requests": [],
+                        "signal_score": 30,
+                        "signal_reasons": ["bug"],
+                    }
+                ],
+            },
+            {
+                **common,
+                "repo": "owner/runtime",
+                "issue_leads": [
+                    {
+                        "number": 2,
+                        "title": "Installer does not record local path",
+                        "url": "https://github.com/owner/runtime/issues/2",
+                        "labels": ["bug"],
+                        "assignees": [],
+                        "linked_pull_requests": [],
+                        "signal_score": 30,
+                        "signal_reasons": ["bug"],
+                    }
+                ],
+            },
+        ]
+        result = radar.select_recommended_opportunity(repositories)
+        self.assertEqual(result["repo"], "owner/runtime")
+
+    def test_recommendation_skips_issue_with_linked_pull_request(self) -> None:
+        repositories = [
+            {
+                "repo": "owner/skills",
+                "archived": False,
+                "disabled": False,
+                "license": "MIT",
+                "repository_signal_score": 40,
+                "local_fit": {"compatible": True, "score": 30, "reasons": []},
+                "seed": {"difficulty": "low", "category": "Agent Skill"},
+                "issue_leads": [
+                    {
+                        "number": 1,
+                        "title": "Installer fails",
+                        "url": "https://github.com/owner/skills/issues/1",
+                        "labels": ["bug"],
+                        "assignees": [],
+                        "linked_pull_requests": ["https://github.com/owner/skills/pull/2"],
+                        "signal_score": 60,
+                        "signal_reasons": ["bug"],
+                    },
+                    {
+                        "number": 3,
+                        "title": "Validator rejects valid skill",
+                        "url": "https://github.com/owner/skills/issues/3",
+                        "labels": ["bug"],
+                        "assignees": [],
+                        "linked_pull_requests": [],
+                        "signal_score": 30,
+                        "signal_reasons": ["bug"],
+                    },
+                ],
+            }
+        ]
+        result = radar.select_recommended_opportunity(repositories)
+        self.assertEqual(result["issue"]["number"], 3)
+
+    def test_recommendation_prefers_skill_repo_when_scores_are_close(self) -> None:
+        def repository(repo: str, category: str, repo_score: int) -> dict[str, object]:
+            return {
+                "repo": repo,
+                "archived": False,
+                "disabled": False,
+                "license": "MIT",
+                "repository_signal_score": repo_score,
+                "local_fit": {"compatible": True, "score": 30, "reasons": []},
+                "seed": {"difficulty": "low", "category": category},
+                "issue_leads": [
+                    {
+                        "number": 1,
+                        "title": "Validator fails for valid input",
+                        "url": f"https://github.com/{repo}/issues/1",
+                        "labels": ["bug"],
+                        "assignees": [],
+                        "linked_pull_requests": [],
+                        "signal_score": 30,
+                        "signal_reasons": ["bug"],
+                    }
+                ],
+            }
+
+        result = radar.select_recommended_opportunity(
+            [repository("owner/library", "网络库", 40), repository("owner/skills", "Agent Skill", 35)]
+        )
+        self.assertEqual(result["repo"], "owner/skills")
+
+    def test_scan_prioritizes_easy_local_fit_before_request_limit(self) -> None:
+        seed = {
+            "repositories": [
+                {
+                    "repo": "owner/heavy",
+                    "category": "机器学习",
+                    "difficulty": "high",
+                    "setup": {
+                        "level": "heavy",
+                        "required_commands": ["cargo"],
+                        "platforms": ["linux", "macos", "windows"],
+                    },
+                },
+                {
+                    "repo": "owner/skill",
+                    "category": "Agent Skill",
+                    "difficulty": "low",
+                    "setup": {
+                        "level": "light",
+                        "required_commands": ["python3"],
+                        "platforms": ["linux", "macos", "windows"],
+                    },
+                },
+            ]
+        }
+        environment = {
+            "platform": "macos",
+            "architecture": "arm64",
+            "commands": {"python3": True, "cargo": False},
+        }
+        inspected: list[str] = []
+
+        def fake_inspect(repo: str, max_issues: int) -> dict[str, object]:
+            inspected.append(repo)
+            return {
+                "repo": repo,
+                "description": "test",
+                "url": f"https://github.com/{repo}",
+                "language": "Python",
+                "license": "MIT",
+                "stars": 100,
+                "forks": 10,
+                "open_issues_and_prs": 1,
+                "default_branch": "main",
+                "pushed_at": "2099-01-01T00:00:00Z",
+                "size_kb": 100,
+                "archived": False,
+                "disabled": False,
+                "repository_signal_score": 32,
+                "repository_signal_reasons": [],
+                "issue_leads": [
+                    {
+                        "number": 9,
+                        "title": "Fix skill validator",
+                        "url": f"https://github.com/{repo}/issues/9",
+                        "labels": ["bug"],
+                        "updated_at": "2099-01-01T00:00:00Z",
+                        "assignees": [],
+                        "linked_pull_requests": [],
+                        "signal_score": 30,
+                        "signal_reasons": ["bug"],
+                    }
+                ],
+            }
+
+        with mock.patch.object(radar, "inspect_repository", side_effect=fake_inspect):
+            report = radar.scan(seed, max_repos=1, max_issues=5, language=None, environment=environment)
+
+        self.assertEqual(inspected, ["owner/skill"])
+        self.assertEqual(report["recommended_opportunity"]["repo"], "owner/skill")
+        self.assertEqual(report["recommended_opportunity"]["issue"]["number"], 9)
+        self.assertEqual(report["recommended_opportunity"]["status"], "needs_verification")
+
+    def test_scan_detects_custom_seed_commands(self) -> None:
+        seed = {
+            "repositories": [
+                {
+                    "repo": "owner/custom",
+                    "category": "Agent Skill",
+                    "difficulty": "low",
+                    "setup": {
+                        "level": "light",
+                        "required_commands": ["custom-validator"],
+                        "platforms": ["macos"],
+                    },
+                }
+            ]
+        }
+        inspected: list[str] = []
+
+        def fake_inspect(repo: str, max_issues: int) -> dict[str, object]:
+            inspected.append(repo)
+            return {
+                "repo": repo,
+                "license": "MIT",
+                "archived": False,
+                "disabled": False,
+                "repository_signal_score": 30,
+                "repository_signal_reasons": [],
+                "issue_leads": [],
+            }
+
+        with mock.patch.object(
+            radar,
+            "detect_local_environment",
+            return_value={"platform": "macos", "architecture": "arm64", "commands": {}},
+        ), mock.patch.object(
+            radar.shutil,
+            "which",
+            side_effect=lambda command: "/usr/local/bin/custom-validator"
+            if command == "custom-validator"
+            else None,
+        ), mock.patch.object(radar, "inspect_repository", side_effect=fake_inspect):
+            report = radar.scan(seed, max_repos=1, max_issues=1, language=None)
+
+        self.assertEqual(inspected, ["owner/custom"])
+        self.assertTrue(report["local_environment"]["commands"]["custom-validator"])
+
+    def test_markdown_report_highlights_exactly_one_recommendation(self) -> None:
+        report = {
+            "generated_at": "2026-09-27T00:00:00+00:00",
+            "warning": "先复现，再贡献。",
+            "local_environment": {
+                "platform": "macos",
+                "architecture": "arm64",
+                "commands": {"python3": True, "node": True},
+            },
+            "recommended_opportunity": {
+                "status": "needs_verification",
+                "repo": "owner/skills",
+                "issue": {
+                    "number": 7,
+                    "title": "Fix validator",
+                    "url": "https://github.com/owner/skills/issues/7",
+                },
+                "selection_score": 88,
+                "why": ["本机依赖齐全", "轻量仓库"],
+                "next_step": "先阅读完整 Issue 和贡献政策，再在当前默认分支复现。",
+            },
+            "repositories": [],
+            "errors": [],
+        }
+        text = radar.markdown_report(report)
+        self.assertEqual(text.count("## 建议优先验证的 1 个机会"), 1)
+        self.assertIn("owner/skills #7", text)
+        self.assertIn("macos/arm64", text)
 
     def test_output_paths_reject_aliases_existing_files_and_symlinks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -187,6 +504,69 @@ class ContributionRadarTests(unittest.TestCase):
         finally:
             setattr(radar, "gh_json", old_gh_json)
         self.assertEqual([item["number"] for item in issues], [2, 1])
+
+    def test_fetch_issues_keeps_recent_unlabeled_runtime_bug(self) -> None:
+        old_gh_json = getattr(radar, "gh_json")
+        try:
+            setattr(
+                radar,
+                "gh_json",
+                lambda args, timeout=45: [
+                    {
+                        "number": 5,
+                        "title": "Installer crashes when the source path contains spaces",
+                        "url": "https://github.com/owner/repo/issues/5",
+                        "labels": [],
+                        "updatedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
+                        "assignees": [],
+                        "closedByPullRequestsReferences": [],
+                    }
+                ],
+            )
+            issues = radar.fetch_issues("owner/repo", limit=5)
+        finally:
+            setattr(radar, "gh_json", old_gh_json)
+        self.assertEqual([item["number"] for item in issues], [5])
+        self.assertIn("标题包含可复现症状", issues[0]["signal_reasons"])
+
+    def test_fetch_issues_filters_linked_prs_before_limit_and_keeps_label_search(self) -> None:
+        calls: list[list[str]] = []
+        linked = [
+            {
+                "number": number,
+                "title": f"Bug {number}",
+                "url": f"https://github.com/owner/repo/issues/{number}",
+                "labels": [{"name": "bug"}],
+                "updatedAt": "2099-01-01T00:00:00Z",
+                "assignees": [],
+                "closedByPullRequestsReferences": [
+                    {"url": f"https://github.com/owner/repo/pull/{number}"}
+                ],
+            }
+            for number in range(1, 31)
+        ]
+        eligible = {
+            "number": 31,
+            "title": "Parser fails on valid input",
+            "url": "https://github.com/owner/repo/issues/31",
+            "labels": [],
+            "updatedAt": "2099-01-01T00:00:00Z",
+            "assignees": [],
+            "closedByPullRequestsReferences": [],
+        }
+
+        def fake_gh_json(args: list[str], timeout: int = 45) -> list[dict[str, object]]:
+            calls.append(args)
+            requested_limit = int(args[args.index("--limit") + 1])
+            return [*linked, eligible][:requested_limit]
+
+        with mock.patch.object(radar, "gh_json", side_effect=fake_gh_json):
+            issues = radar.fetch_issues("owner/repo", limit=5)
+
+        self.assertEqual([item["number"] for item in issues], [31])
+        searches = [args[args.index("--search") + 1] for args in calls]
+        self.assertTrue(any("label:" in query for query in searches))
+        self.assertIn("sort:updated-desc", searches)
 
     def test_duplicate_search_falls_back_and_filters_repository(self) -> None:
         old_gh_json = getattr(radar, "gh_json")

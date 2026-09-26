@@ -1,111 +1,134 @@
 {
-  "schema_version": 1,
-  "snapshot_date": "2026-09-26",
-  "description": "用于发现开源贡献机会的初始候选池。stars_snapshot 只是快照，运行扫描脚本时会重新读取实时数据。",
+  "schema_version": 2,
+  "snapshot_date": "2026-09-27",
+  "description": "优先收录依赖轻、可在普通开发机本地验证、近期有外部贡献合并记录的项目。stars_snapshot 只是快照，扫描时会读取实时数据。",
   "repositories": [
     {
-      "repo": "NousResearch/hermes-agent",
-      "category": "AI Agent",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 249161,
-      "reason": "活跃的通用 AI Agent 工程，涵盖工具调用、网关、记忆与自动化。"
-    },
-    {
-      "repo": "openclaw/openclaw",
-      "category": "AI Agent",
+      "repo": "vercel-labs/skills",
+      "category": "Agent Skill",
       "language": "TypeScript",
-      "difficulty": "high",
-      "stars_snapshot": 390563,
-      "reason": "大型 Agent 平台，适合有明确复现和聚焦测试的可靠性修复。"
+      "difficulty": "low",
+      "stars_snapshot": 32556,
+      "reason": "仓库小、MIT 许可、近期持续合并外部贡献，适合从技能安装与索引行为入手。",
+      "setup": {"level": "light", "required_commands": ["git", "node", "pnpm"], "platforms": ["linux", "macos", "windows"]}
     },
     {
-      "repo": "browser-use/browser-use",
-      "category": "Browser Agent",
+      "repo": "agentskills/agentskills",
+      "category": "Agent Skill",
       "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 116375,
-      "reason": "浏览器自动化 Agent，常见机会包括解析、状态管理和兼容性问题。"
+      "difficulty": "low",
+      "stars_snapshot": 25711,
+      "reason": "Agent Skills 开放规范与参考实现，仓库体积小，近期外部 PR 接受率高。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "google/skills",
+      "category": "Agent Skill",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 20408,
+      "reason": "Google 官方技能仓库，Apache-2.0 许可，技能内容和校验脚本可做聚焦验证。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "huggingface/skills",
+      "category": "Agent Skill",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 11104,
+      "reason": "Hugging Face 官方技能仓库，Apache-2.0 许可，仓库小且近期活跃。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "addyosmani/agent-skills",
+      "category": "Agent Skill",
+      "language": "JavaScript",
+      "difficulty": "low",
+      "stars_snapshot": 99278,
+      "reason": "MIT 许可的工程技能集，仓库轻量，近期有较多外部贡献被合并。",
+      "setup": {"level": "light", "required_commands": ["git", "node", "npm"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "antfu/skills",
+      "category": "Agent Skill",
+      "language": "TypeScript",
+      "difficulty": "low",
+      "stars_snapshot": 5925,
+      "reason": "MIT 许可的小型技能仓库，外部贡献活跃，适合文档行为与轻量脚本修复。",
+      "setup": {"level": "light", "required_commands": ["git", "node", "pnpm"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "BuilderIO/skills",
+      "category": "Agent Skill",
+      "language": "JavaScript",
+      "difficulty": "low",
+      "stars_snapshot": 4441,
+      "reason": "MIT 许可的 Agent Skills 集合，体积小且有外部 PR 合并记录。",
+      "setup": {"level": "light", "required_commands": ["git", "node", "npm"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "cloudflare/skills",
+      "category": "Agent Skill",
+      "language": "Shell",
+      "difficulty": "low",
+      "stars_snapshot": 2914,
+      "reason": "Cloudflare 官方技能仓库，Apache-2.0 许可，技能内容可在无云账号时做静态与本地校验。",
+      "setup": {"level": "light", "required_commands": ["git", "curl", "jq"], "platforms": ["linux", "macos"]}
+    },
+
+    {
+      "repo": "psf/requests",
+      "category": "网络库",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 54346,
+      "reason": "成熟且仓库规模适中，适合不依赖外部服务的 HTTP 边界与文档行为修复。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "pallets/flask",
+      "category": "Web 框架",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 74788,
+      "reason": "测试结构成熟，适合小范围兼容性、CLI 与文档行为修复。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "Textualize/rich",
+      "category": "Python 基础设施",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 57441,
+      "reason": "纯 Python 终端渲染库，可用小型输入验证布局、平台输出和边界行为。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
     },
     {
       "repo": "modelcontextprotocol/python-sdk",
       "category": "MCP",
       "language": "Python",
       "difficulty": "medium",
-      "stars_snapshot": 24407,
-      "reason": "MCP 官方 Python SDK，协议、传输、验证和兼容性问题可通过测试复现。"
+      "stars_snapshot": 24406,
+      "reason": "MCP 官方 Python SDK，协议、传输和验证问题通常可以用聚焦测试复现。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3", "uv"], "platforms": ["linux", "macos", "windows"]}
     },
     {
       "repo": "modelcontextprotocol/typescript-sdk",
       "category": "MCP",
       "language": "TypeScript",
       "difficulty": "medium",
-      "stars_snapshot": 13464,
-      "reason": "MCP 官方 TypeScript SDK，适合协议边界和类型行为修复。"
-    },
-    {
-      "repo": "pydantic/pydantic",
-      "category": "Python 基础设施",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 28885,
-      "reason": "广泛使用的数据验证库，适合边界行为、错误信息和兼容性修复。"
-    },
-    {
-      "repo": "astral-sh/ruff",
-      "category": "开发工具",
-      "language": "Rust",
-      "difficulty": "high",
-      "stars_snapshot": 49798,
-      "reason": "高性能 Python 工具链项目，适合规则正确性和解析边界问题。"
-    },
-    {
-      "repo": "fastapi/fastapi",
-      "category": "Web 框架",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 102632,
-      "reason": "知名 Python Web 框架，文档示例、类型与请求处理问题可做聚焦验证。"
-    },
-    {
-      "repo": "psf/requests",
-      "category": "网络库",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 54347,
-      "reason": "成熟 HTTP 客户端，贡献门槛高但测试范围清晰。"
-    },
-    {
-      "repo": "pallets/flask",
-      "category": "Web 框架",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 74786,
-      "reason": "成熟 Python Web 框架，适合小范围兼容性与文档行为修复。"
-    },
-    {
-      "repo": "encode/httpx",
-      "category": "网络库",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 15509,
-      "reason": "现代 HTTP 客户端，协议、代理、超时和平台差异问题较易验证。"
-    },
-    {
-      "repo": "pytest-dev/pytest",
-      "category": "测试工具",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 14532,
-      "reason": "Python 测试基础设施，适合有精确失败用例的行为修复。"
+      "stars_snapshot": 13465,
+      "reason": "MCP 官方 TypeScript SDK，适合协议边界和类型行为修复。",
+      "setup": {"level": "moderate", "required_commands": ["git", "node", "npm"], "platforms": ["linux", "macos", "windows"]}
     },
     {
       "repo": "openai/openai-python",
       "category": "AI SDK",
       "language": "Python",
       "difficulty": "medium",
-      "stars_snapshot": 31697,
-      "reason": "广泛使用的 AI API SDK，适合序列化、类型、重试与文档示例修复。"
+      "stars_snapshot": 31696,
+      "reason": "广泛使用的 AI SDK；只选择可用 mock 验证、不需要真实 API Key 的问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
     },
     {
       "repo": "anthropics/anthropic-sdk-python",
@@ -113,95 +136,17 @@
       "language": "Python",
       "difficulty": "medium",
       "stars_snapshot": 3922,
-      "reason": "AI API SDK，代码规模适中，可关注类型、流式接口和错误处理。"
+      "reason": "代码规模适中，优先选择类型、流式接口和错误处理中的离线可测问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
     },
     {
-      "repo": "langchain-ai/langchain",
-      "category": "AI 应用框架",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 147096,
-      "reason": "大型 AI 应用框架，只选择可在单包内复现和测试的问题。"
-    },
-    {
-      "repo": "run-llama/llama_index",
-      "category": "AI 应用框架",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 52326,
-      "reason": "数据与 Agent 框架，优先选择不依赖付费 API 的本地问题。"
-    },
-    {
-      "repo": "huggingface/transformers",
-      "category": "机器学习",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 166680,
-      "reason": "主流模型库，仅选择不需要模型权重、GPU 或大数据集的聚焦修复。"
-    },
-    {
-      "repo": "openai/codex",
-      "category": "Coding Agent",
-      "language": "Rust",
-      "difficulty": "high",
-      "stars_snapshot": 126579,
-      "reason": "知名 Coding Agent，适合 CLI、平台兼容与状态机问题。"
-    },
-    {
-      "repo": "THU-MAIC/OpenMAIC",
-      "category": "多智能体",
-      "language": "TypeScript",
-      "difficulty": "medium",
-      "stars_snapshot": 39124,
-      "reason": "活跃的多智能体项目，可关注交互、工作流和前端可靠性。"
-    },
-    {
-      "repo": "browser-use/video-use",
-      "category": "AI 视频",
+      "repo": "fastapi/fastapi",
+      "category": "Web 框架",
       "language": "Python",
       "difficulty": "medium",
-      "stars_snapshot": 27286,
-      "reason": "代码规模较小的 AI 视频项目，适合可本地验证的解析和工作流修复。"
-    },
-    {
-      "repo": "Aider-AI/aider",
-      "category": "Coding Agent",
-      "language": "Python",
-      "difficulty": "medium",
-      "stars_snapshot": 49203,
-      "reason": "成熟的终端编程助手，可关注模型适配、编辑流程和 CLI 兼容问题。"
-    },
-    {
-      "repo": "continuedev/continue",
-      "category": "Coding Agent",
-      "language": "TypeScript",
-      "difficulty": "high",
-      "stars_snapshot": 36033,
-      "reason": "活跃的开源编程助手，适合有聚焦测试路径的编辑器与 Agent 修复。"
-    },
-    {
-      "repo": "open-webui/open-webui",
-      "category": "AI 应用",
-      "language": "Python",
-      "difficulty": "high",
-      "stars_snapshot": 153230,
-      "reason": "大型 AI 应用项目；许可证与贡献范围必须在每次任务中重新核验。"
-    },
-    {
-      "repo": "vitest-dev/vitest",
-      "category": "测试工具",
-      "language": "TypeScript",
-      "difficulty": "medium",
-      "stars_snapshot": 17158,
-      "reason": "前端测试框架，适合可复现的断言、运行器和兼容性问题。"
-    },
-    {
-      "repo": "pnpm/pnpm",
-      "category": "包管理器",
-      "language": "Rust",
-      "difficulty": "high",
-      "stars_snapshot": 36653,
-      "reason": "主流包管理器，优先选择有小型 fixture 和聚焦测试的问题。"
+      "stars_snapshot": 102640,
+      "reason": "知名 Python Web 框架，优先处理能在单个测试模块内复现的类型或请求问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3", "uv"], "platforms": ["linux", "macos", "windows"]}
     },
     {
       "repo": "eslint/eslint",
@@ -209,31 +154,53 @@
       "language": "JavaScript",
       "difficulty": "medium",
       "stars_snapshot": 27516,
-      "reason": "成熟静态分析项目，规则行为通常可以用最小输入稳定复现。"
+      "reason": "规则行为可用最小输入稳定复现，但需先确认提案与 Issue 接受政策。",
+      "setup": {"level": "moderate", "required_commands": ["git", "node", "npm"], "platforms": ["linux", "macos", "windows"]}
     },
     {
-      "repo": "Textualize/rich",
-      "category": "Python 基础设施",
+      "repo": "vitest-dev/vitest",
+      "category": "测试工具",
+      "language": "TypeScript",
+      "difficulty": "medium",
+      "stars_snapshot": 17159,
+      "reason": "适合可复现的断言、运行器和兼容性问题，聚焦测试通常不需外部服务。",
+      "setup": {"level": "moderate", "required_commands": ["git", "node", "pnpm"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "browser-use/video-use",
+      "category": "AI 视频",
       "language": "Python",
       "difficulty": "medium",
-      "stars_snapshot": 57440,
-      "reason": "终端渲染库，可关注跨平台输出、布局和边界输入。"
+      "stars_snapshot": 27322,
+      "reason": "仓库较小；只选择不需要模型权重、浏览器登录态或付费 API 的解析与工作流问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3", "uv"], "platforms": ["linux", "macos", "windows"]}
     },
     {
-      "repo": "cli/cli",
-      "category": "开发工具",
-      "language": "Go",
+      "repo": "THU-MAIC/OpenMAIC",
+      "category": "多智能体",
+      "language": "TypeScript",
       "difficulty": "medium",
-      "stars_snapshot": 46416,
-      "reason": "GitHub 官方 CLI，适合命令行为、API 适配和跨平台问题。"
+      "stars_snapshot": 39143,
+      "reason": "活跃的多智能体项目，可选择有本地 fixture 的交互、工作流和前端可靠性问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "node", "pnpm"], "platforms": ["linux", "macos", "windows"]}
     },
     {
-      "repo": "go-gitea/gitea",
-      "category": "开发平台",
-      "language": "Go",
-      "difficulty": "high",
-      "stars_snapshot": 58170,
-      "reason": "大型自托管 Git 服务，只有聚焦测试成本可控时才进入实现。"
+      "repo": "browser-use/browser-use",
+      "category": "Browser Agent",
+      "language": "Python",
+      "difficulty": "medium",
+      "stars_snapshot": 116407,
+      "reason": "浏览器 Agent；只选择能用 mock 或项目自带测试验证、不需要真实网站凭据的问题。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3", "uv"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "NousResearch/hermes-agent",
+      "category": "AI Agent",
+      "language": "Python",
+      "difficulty": "medium",
+      "stars_snapshot": 249232,
+      "reason": "功能覆盖广且影响力高，但仓库较大；仅在本机能运行聚焦测试时选择。",
+      "setup": {"level": "heavy", "required_commands": ["git", "python3", "uv"], "platforms": ["linux", "macos", "windows"]}
     }
   ]
 }

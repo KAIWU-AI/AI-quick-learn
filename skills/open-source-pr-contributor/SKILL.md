@@ -1,7 +1,7 @@
 ---
 name: open-source-pr-contributor
-description: 用于发现、验证并提交真实的开源问题修复 PR.
-version: 0.1.0
+description: 用于结合本机环境发现、验证并提交一个真实的开源问题修复 PR.
+version: 0.2.0
 author: Bryan Nathan (hydraxman), Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -15,7 +15,7 @@ metadata:
 
 这个技能帮助 Coding Agent 从候选发现、问题复现、最小修复、测试验证一路走到 Pull Request。目标是完成一个维护者愿意审查的真实贡献，而不是为了数量制造 typo、格式化或重复 PR。
 
-配套脚本 `scripts/contribution_radar.py` 对 GitHub 远端只读：它只做环境诊断、候选扫描、Issue 线索排序和重复项搜索；`scan` 会在本地生成报告。任何 fork、push、评论、Issue 或 PR 都必须在读完项目规则、确认问题可复现并完成测试之后进行。
+配套脚本 `scripts/contribution_radar.py` 对 GitHub 远端只读：它检测当前机器的系统、架构和工具链，优先扫描本机可验证的轻量项目，并从没有已关联 PR 的 Issue 中只推荐 1 个优先深挖机会。`scan` 只在本地生成报告。任何 fork、push、评论、Issue 或 PR 都必须在读完项目规则、确认问题可复现并完成测试之后进行。
 
 ## 适用场景
 
@@ -44,13 +44,15 @@ python3 <skill-dir>/scripts/contribution_radar.py doctor
 
 ## 候选仓库池
 
-`references/repository-pool.json` 提供一个可扩展的初始池，覆盖 AI Agent、MCP、AI SDK、Python 基础设施、Web 框架、网络库、测试工具和机器学习项目。代表项目包括：
+`references/repository-pool.json` 提供一个可扩展的初始池，重点覆盖依赖轻、可离线或用 fixture 验证的 Agent Skill、Python 库、SDK 和测试工具。每项都声明 `setup.level`、`required_commands` 和 `platforms`。代表项目包括：
 
-- AI Agent：`NousResearch/hermes-agent`、`openclaw/openclaw`、`browser-use/browser-use`；
+- Agent Skill：`vercel-labs/skills`、`agentskills/agentskills`、`google/skills`、`huggingface/skills`、`addyosmani/agent-skills`、`antfu/skills`、`BuilderIO/skills`、`cloudflare/skills`；
+- AI Agent：`NousResearch/hermes-agent`、`browser-use/browser-use`；
 - MCP：`modelcontextprotocol/python-sdk`、`modelcontextprotocol/typescript-sdk`；
-- Python 与 Web：`pydantic/pydantic`、`fastapi/fastapi`、`psf/requests`、`pallets/flask`、`encode/httpx`、`pytest-dev/pytest`；
-- AI SDK/框架：`openai/openai-python`、`anthropics/anthropic-sdk-python`、`langchain-ai/langchain`、`run-llama/llama_index`；
-- 工具与模型：`astral-sh/ruff`、`huggingface/transformers`、`openai/codex`、`THU-MAIC/OpenMAIC`、`browser-use/video-use`。
+- Python 与 Web：`fastapi/fastapi`、`psf/requests`、`pallets/flask`、`Textualize/rich`；
+- AI SDK/工具：`openai/openai-python`、`anthropics/anthropic-sdk-python`、`eslint/eslint`、`vitest-dev/vitest`、`THU-MAIC/OpenMAIC`、`browser-use/video-use`。
+
+OpenClaw、Pydantic、Ruff、Pytest、LangChain、LlamaIndex、Transformers、Codex、Continue、Open WebUI、pnpm 和 Gitea 等大型或重依赖项目已从默认池移除；需要时仍可放入自定义 seed 扫描。
 
 池中的 `stars_snapshot` 带日期，仅用于说明项目影响力。每次扫描会重新读取 stars、许可证、活跃时间、仓库大小和开放 Issue，不应把旧快照当成实时数据。
 
@@ -84,7 +86,20 @@ python3 <skill-dir>/scripts/contribution_radar.py scan --language Python --max-r
 python3 <skill-dir>/scripts/contribution_radar.py inspect OWNER/REPO --max-issues 10
 ```
 
-报告里的“线索分”只用于排序，不能证明 Issue 仍然有效、没人处理或适合当前机器。选中目标后必须继续执行下面的门禁。
+扫描器先按本机工具链、准备成本和难度决定要请求哪些仓库，再从标签候选及近期无标签的故障型 Issue 中挑选线索。报告顶部只给出一个 `needs_verification` 推荐；缺少必需命令、平台不兼容、已关联 PR、过旧、破坏性 API 变更或低价值元数据事项不会进入该推荐。
+
+报告里的“线索分”只用于排序，不能证明 Issue 仍然有效、没人处理或已经适合提交。选中目标后必须继续执行下面的门禁。
+
+### 1.1 收敛为一个真实机会
+
+脚本给出的唯一推荐只是待验证起点。Agent 必须按排名逐个做以下检查，直到恰好一个候选通过；失败项立即记录原因并换下一个，不要同时铺开多个实现：
+
+1. 对照 `local_environment` 和仓库 `setup`，再核对实际测试命令、包管理器版本、磁盘、OS/架构以及是否需要浏览器、Docker、GPU、账号或云服务。
+2. 阅读 Issue 正文、全部评论、关联 PR 与当前默认分支代码；开放 Issue 不代表缺陷仍存在。
+3. 在未改生产代码的干净 checkout 上运行最小复现。无法 RED、已有实现或需要本机缺失条件时淘汰。
+4. 对通过者执行完整查重和政策检查，只保留一个最终机会，并记录仓库、Issue、默认分支 SHA、复现命令和本机适配依据。
+
+最终对用户只能称通过以上检查的对象为“已选贡献机会”。脚本中的 `needs_verification` 只能称“待验证线索”。如果所有候选都失败，明确报告 0 个机会及各自失败门禁，不要硬选。
 
 ### 2. 搜索重复工作
 
@@ -115,7 +130,7 @@ python3 <skill-dir>/scripts/contribution_radar.py duplicates OWNER/REPO "exact e
 2. **政策允许**：已阅读 `CONTRIBUTING*`、`CODE_OF_CONDUCT*`、`SECURITY*`、`AGENTS.md`、Issue/PR 模板和 AI 使用政策。
 3. **问题可验证**：Issue 给出了具体症状或复现路径；克隆后必须在最新默认分支上确认，不能只相信标题。
 4. **没有重复工作**：开放/关闭 Issue、PR、最近提交和当前代码都未覆盖同一根因。
-5. **本地可验证**：不需要私有服务、付费 API、GPU、大模型权重、超大数据集或无法获得的平台。
+5. **本地可验证**：先核对报告的 `local_environment` 与仓库 `setup`；不需要缺失的命令、私有服务、付费 API、GPU、大模型权重、超大数据集或无法获得的平台。
 6. **改动有用户价值**：修复正确性、可靠性、兼容性、安装或会导致错误使用的文档；拒绝纯 typo、徽章和无关格式化。
 
 优先选择：影响可见、根因清晰、修改范围小、能写回归测试、维护者明确欢迎的问题。
@@ -261,7 +276,7 @@ gh pr checks <PR_URL> -R OWNER/REPO
 
 标签只是入口，真正有价值的问题常在这些位置：
 
-1. 最近更新但没有标签的 bug；
+1. 最近更新但没有标签、标题含明确失败症状的 bug；
 2. 关闭但未修复的 Issue，以及关闭时留下的后续方向；
 3. 长期停滞或被放弃的 PR 中仍可复现的问题；
 4. 同一模块反复出现的错误、超时、路径、编码、状态同步或平台兼容问题；

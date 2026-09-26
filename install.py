@@ -57,6 +57,23 @@ def validate_skill_tree(root: Path) -> None:
         name = item["repo"]
         if name.count("/") != 1 or any(part in {"", ".", ".."} for part in name.split("/")):
             raise RuntimeError(f"候选池仓库名无效：{name!r}")
+        if item.get("difficulty") not in {"low", "medium", "high"}:
+            raise RuntimeError(f"候选池 difficulty 无效：{name!r}")
+        setup = item.get("setup")
+        if not isinstance(setup, dict) or setup.get("level") not in {
+            "light",
+            "moderate",
+            "heavy",
+        }:
+            raise RuntimeError(f"候选池 setup.level 无效：{name!r}")
+        required_commands = setup.get("required_commands")
+        platforms = setup.get("platforms")
+        if not isinstance(required_commands, list) or not all(
+            isinstance(command, str) and command for command in required_commands
+        ):
+            raise RuntimeError(f"候选池 required_commands 无效：{name!r}")
+        if not isinstance(platforms, list) or not platforms:
+            raise RuntimeError(f"候选池 platforms 无效：{name!r}")
         names.append(name.lower())
     if len(names) != len(set(names)):
         raise RuntimeError("候选池包含重复仓库")

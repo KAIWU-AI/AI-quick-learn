@@ -5,7 +5,7 @@
 它由两部分组成：
 
 - `SKILL.md`：约束 Agent 按证据执行完整贡献流程；
-- `contribution_radar.py`：只读访问 GitHub，扫描候选仓库、Issue 线索和重复工作；`scan` 会在本地生成报告。
+- `contribution_radar.py`：只读访问 GitHub，先检测当前机器的系统与工具链，再扫描本机可验证的仓库、Issue 线索和重复工作；`scan` 会在本地生成报告，并只推荐 1 个优先深挖机会。
 
 脚本不会自动 fork、push、评论或创建 PR。所有公开操作都必须在确认项目政策、问题可复现、没有重复工作、测试通过并得到用户授权之后进行，避免给维护者制造垃圾 PR。
 
@@ -60,13 +60,17 @@ python3 -m unittest discover -s skills/open-source-pr-contributor/tests -v
 python3 -m unittest discover -s tests -v
 ```
 
-扫描最多 12 个候选仓库，每个仓库保留 5 个 Issue 线索：
+扫描最多 12 个**与本机配置匹配**的候选仓库，每个仓库保留 5 个 Issue 线索：
 
 ```bash
 python3 skills/open-source-pr-contributor/scripts/contribution_radar.py scan --max-repos 12 --max-issues 5 --output contribution-report.json --markdown contribution-report.md
 ```
 
-默认不覆盖已有报告；确认更新时添加 `--force`。任一仓库读取失败时，脚本会保留成功结果和错误明细，但以非零状态退出，避免自动化把不完整扫描当成成功。
+默认不覆盖已有报告；确认更新时添加 `--force`。扫描器会检测 macOS/Linux/Windows、CPU 架构以及 Git、Python、Node、pnpm、uv、jq 等本机命令，先排除缺少必需工具或平台不兼容的仓库，再按准备成本、难度和 Issue 质量排序。报告顶部只给出 1 个 `needs_verification` 候选；它仍需阅读完整讨论、查重并在最新默认分支复现，不能直接当成可提交 PR。
+
+Agent 接下来必须从这个待验证线索开始，逐个核对真实测试命令、工具版本、平台/硬件/服务要求、Issue 全部讨论、当前默认分支和重复工作，并实际运行最小复现。只有通过这些检查的一个候选才能称为“已选贡献机会”；当前代码已经修复、已有活跃实现或本机无法验证时，必须淘汰并继续下一名。全部失败时输出 0 个机会，不为满足数量硬选。
+
+任一仓库读取失败时，脚本会保留成功结果和错误明细，但以非零状态退出，避免自动化把不完整扫描当成成功。扫描同时读取 Issue 关联 PR；已有实现中的 Issue 不会进入唯一推荐。除常用标签外，还会从近期无标签 Issue 中识别带有 crash、fail、incorrect、missing 等可复现症状的候选。
 
 只看 Python 项目：
 
@@ -90,37 +94,14 @@ python3 skills/open-source-pr-contributor/scripts/contribution_radar.py duplicat
 
 ## 候选项目
 
-初始池覆盖 29 个知名或活跃项目，包括：
+初始池收敛为 22 个依赖相对可控的项目，默认优先扫描 8 个 Agent Skill 仓库：
 
-- `NousResearch/hermes-agent`
-- `openclaw/openclaw`
-- `browser-use/browser-use`
-- `modelcontextprotocol/python-sdk`
-- `modelcontextprotocol/typescript-sdk`
-- `pydantic/pydantic`
-- `astral-sh/ruff`
-- `fastapi/fastapi`
-- `psf/requests`
-- `pallets/flask`
-- `encode/httpx`
-- `pytest-dev/pytest`
-- `openai/openai-python`
-- `anthropics/anthropic-sdk-python`
-- `langchain-ai/langchain`
-- `run-llama/llama_index`
-- `huggingface/transformers`
-- `openai/codex`
-- `THU-MAIC/OpenMAIC`
-- `browser-use/video-use`
-- `Aider-AI/aider`
-- `continuedev/continue`
-- `open-webui/open-webui`
-- `vitest-dev/vitest`
-- `pnpm/pnpm`
-- `eslint/eslint`
-- `Textualize/rich`
-- `cli/cli`
-- `go-gitea/gitea`
+- Agent Skill：`vercel-labs/skills`、`agentskills/agentskills`、`google/skills`、`huggingface/skills`、`addyosmani/agent-skills`、`antfu/skills`、`BuilderIO/skills`、`cloudflare/skills`；
+- Python/网络：`psf/requests`、`pallets/flask`、`Textualize/rich`、`fastapi/fastapi`；
+- SDK/测试工具：`modelcontextprotocol/python-sdk`、`modelcontextprotocol/typescript-sdk`、`openai/openai-python`、`anthropics/anthropic-sdk-python`、`eslint/eslint`、`vitest-dev/vitest`；
+- Agent/应用：`browser-use/video-use`、`THU-MAIC/OpenMAIC`、`browser-use/browser-use`、`NousResearch/hermes-agent`。
+
+已移除默认池中的大型或重依赖目标，如 OpenClaw、Pydantic、Ruff、Pytest、LangChain、LlamaIndex、Transformers、Codex、Continue、Open WebUI、pnpm 与 Gitea。仍可通过自定义 `--seed` 扫描它们，但不会再挤占默认的轻量候选名额。
 
 完整数据在 `skills/open-source-pr-contributor/references/repository-pool.json`。其中的 stars 有快照日期；扫描脚本会重新读取实时 stars、许可证、活跃时间和 Issue。
 
@@ -130,7 +111,7 @@ python3 skills/open-source-pr-contributor/scripts/contribution_radar.py duplicat
 2. 已阅读贡献指南、模板、安全政策和 AI 使用政策；
 3. 问题能在最新默认分支复现；
 4. 开放/关闭 Issue、PR 和最近提交中没有重复工作；
-5. 当前机器能运行聚焦测试；
+5. 当前机器的系统、架构和已安装命令满足仓库的 `setup` 元数据，且能运行聚焦测试；
 6. 修改解决真实用户问题，而不是 typo、徽章或无关格式化。
 
 ## 如何找问题
