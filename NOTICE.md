@@ -5,7 +5,7 @@
 - `open-source-repo-portfolio` v1.3.4，SHA-256：`912af8331758869e3620799638908c017d6e7dddf394f99f6eff1cf3ad360673`
 - `trending-open-source-contributor` v1.5.0，SHA-256：`cf18150e43ce42908a49f4f888c661ca29d19f2833f005a852c2c28feae7b106`
 
-原始技能作者标记为 Hermes Agent。本仓库的改编与工程化由 Bryan Nathan（GitHub: `hydraxman`）完成。
+原始技能作者标记为 Hermes Agent。本仓库由 KAIWU-AI Contributors 继续改编与维护。
 
 ## 保留的核心方法
 
@@ -28,7 +28,7 @@
 - 中文工作流；
 - 面向 Hermes Agent、Claude Code、Codex 和自定义目录的安装器；
 - 无第三方 Python 依赖的 GitHub 候选扫描与查重脚本；
-- 29 个跨领域公开仓库的可扩展种子池；
+- 22 个跨领域公开仓库的可扩展种子池；
 - 安装、输入校验、凭据清理、文件写入和候选池测试；
 - Linux、macOS、Windows 的持续集成验证。
 

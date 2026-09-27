@@ -142,6 +142,7 @@ python3 skills/open-source-pr-contributor/scripts/contribution_radar.py duplicat
     └── open-source-pr-contributor/
         ├── SKILL.md
         ├── references/
+        │   ├── pr-workflow.md
         │   └── repository-pool.json
         ├── scripts/
         │   └── contribution_radar.py

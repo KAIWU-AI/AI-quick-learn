@@ -1,8 +1,8 @@
 ---
 name: open-source-pr-contributor
 description: 指导 Agent 发现、验证并提交高质量开源贡献.
-version: 0.3.0
-author: Bryan Nathan (hydraxman), Hermes Agent
+version: 0.3.1
+author: KAIWU-AI Contributors
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -68,6 +68,18 @@ Issue 可能已经过期、被修复、被认领或存在相关 PR。开始实�
 - `scan`：扫描候选池并生成本地报告；
 - `inspect`：查看单个仓库的 Issue 线索；
 - `duplicates`：辅助搜索相近 Issue 和 PR。
+
+常用发布命令保持简单：
+
+```bash
+gh repo fork OWNER/REPO --clone=false
+git push -u origin HEAD
+gh pr create --repo OWNER/REPO --base DEFAULT_BRANCH --head USER:CURRENT_BRANCH --title "..." --body-file pr-body.md
+gh pr view PR_URL --json url,state,headRefOid,files,statusCheckRollup
+gh pr checks PR_URL
+```
+
+分支、remote、PR 正文和回读等补充示例见 [`references/pr-workflow.md`](references/pr-workflow.md)。提交身份使用当前操作者自己的 GitHub 与 Git 配置，不写死技能作者或其他账号。
 
 ### 2. 收敛到一个机会
 
