@@ -13,7 +13,9 @@ import datetime as dt
 import json
 import os
 import platform
+import random
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -80,6 +82,7 @@ KNOWN_COMMANDS = (
 )
 SETUP_LEVEL_SCORE = {"light": 22, "moderate": 14, "heavy": 4}
 DIFFICULTY_SCORE = {"low": 10, "medium": 5, "high": 0}
+RECOMMENDATION_SCORE_WINDOW = 10
 
 
 class RadarError(RuntimeError):
@@ -241,9 +244,8 @@ def normalize_platform(value: str) -> str:
 def detect_local_environment() -> dict[str, Any]:
     """Detect only non-sensitive capabilities used for local-fit ranking."""
     commands = {command: bool(shutil.which(command)) for command in KNOWN_COMMANDS}
-    commands["python3"] = commands["python3"] or any(
-        shutil.which(alias) for alias in ("python", "py")
-    )
+    # This process already proves Python is available, even outside PATH.
+    commands["python3"] = sys.version_info >= (3, 9)
     return {
         "platform": normalize_platform(platform.system()),
         "architecture": platform.machine().lower() or "unknown",
@@ -481,6 +483,8 @@ def public_issue_search(repo: str, search_terms: str, limit: int) -> list[dict[s
             search_result.get("items"), list
         ):
             raise RadarError(f"Issue 搜索结果格式异常：{repo}")
+        if search_result.get("incomplete_results"):
+            raise RadarError(f"Issue 搜索结果不完整，请稍后重试：{repo}")
         page_items = search_result["items"]
         items.extend(page_items)
         if len(page_items) < per_page or len(items) >= limit:
@@ -531,7 +535,8 @@ def fetch_issues(repo: str, limit: int = 10) -> list[dict[str, Any]]:
     interesting = [
         issue
         for issue in raw_by_number.values()
-        if not issue.get("linked_pull_requests")
+        if not issue.get("assignees")
+        and not issue.get("linked_pull_requests")
         and (
             label_names(issue) & INTERESTING_LABELS
             or any(term in issue["title"].lower() for term in ACTIONABLE_TITLE_TERMS)
@@ -652,6 +657,7 @@ def issue_scope_score(issue: dict[str, Any]) -> tuple[int, list[str]]:
 
 def select_recommended_opportunity(
     repositories: list[dict[str, Any]],
+    rng: random.Random | None = None,
 ) -> dict[str, Any] | None:
     candidates: list[dict[str, Any]] = []
     for repository in repositories:
@@ -721,7 +727,16 @@ def select_recommended_opportunity(
             item["issue"]["number"],
         )
     )
-    return candidates[0]
+    if rng is None:
+        return candidates[0]
+    minimum_score = candidates[0]["selection_score"] - RECOMMENDATION_SCORE_WINDOW
+    best_per_repo: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        if candidate["selection_score"] < minimum_score:
+            break
+        best_per_repo.setdefault(candidate["repo"].lower(), candidate)
+    # Each repository gets one chance, regardless of its number of issues.
+    return rng.choice(list(best_per_repo.values()))
 
 
 def scan(
@@ -730,17 +745,26 @@ def scan(
     max_issues: int,
     language: str | None,
     environment: dict[str, Any] | None = None,
+    random_seed: int | None = None,
+    exclude_repos: Iterable[str] = (),
 ) -> dict[str, Any]:
+    if random_seed is None:
+        random_seed = secrets.randbits(32)
+    random_seed = bounded_int(random_seed, "--random-seed", 0, 2**32 - 1)
+    rng = random.Random(random_seed)
+    excluded = {validate_repo_name(repo).lower() for repo in exclude_repos}
     if environment is None:
         environment = extend_environment_for_seed(detect_local_environment(), seed)
-    items = seed["repositories"]
+    items = [item for item in seed["repositories"] if item["repo"].lower() not in excluded]
     if language:
         items = [
             item
             for item in items
             if str(item.get("language", "")).lower() == language.lower()
         ]
-    items = sorted(items, key=lambda item: candidate_priority(item, environment))
+    items.sort(key=lambda item: item["repo"].lower())
+    rng.shuffle(items)
+    items.sort(key=lambda item: candidate_priority(item, environment)[:3])
     results: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     skipped: list[dict[str, Any]] = []
@@ -781,13 +805,20 @@ def scan(
         "schema_version": 1,
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source_snapshot_date": seed.get("snapshot_date"),
+        "selection": {
+            "strategy": "quality-band-random",
+            "random_seed": random_seed,
+            "score_window": RECOMMENDATION_SCORE_WINDOW,
+        },
+        "attempted_repositories": [item["repo"] for item in compatible_items[:max_repos]],
+        "excluded_repositories": sorted(excluded),
         "local_environment": environment,
         "warning": (
             "推荐项只是下一步深挖对象，不是可直接提交的 PR。提交代码前必须阅读"
             "贡献政策、检查重复项、在当前默认分支复现问题并运行项目原生测试。"
         ),
         "repositories": results,
-        "recommended_opportunity": select_recommended_opportunity(results),
+        "recommended_opportunity": select_recommended_opportunity(results, rng=rng),
         "skipped_repositories": skipped,
         "errors": errors,
     }
@@ -814,6 +845,15 @@ def markdown_report(report: dict[str, Any]) -> str:
         f"> {report['warning']}",
         "",
     ]
+    selection = report.get("selection")
+    if selection:
+        lines.extend([
+            f"随机种子：`{selection['random_seed']}`；"
+            f"在最高分相差不超过 {selection['score_window']} 分的合格仓库间随机选择。",
+            "",
+            "种子仅复现相同环境和候选数据下的选择；实时 GitHub 数据变化会影响结果。",
+            "",
+        ])
     environment = report.get("local_environment") or {}
     if environment:
         available = sorted(
@@ -848,6 +888,8 @@ def markdown_report(report: dict[str, Any]) -> str:
         lines.extend(
             [
                 "本次没有找到同时满足本机依赖、许可证、未分配 Issue 和基础质量条件的机会。",
+                "",
+                "这不代表上游没有贡献空间。先检查读取错误和其他 Issue，再排除已充分检查的仓库继续扫描。",
                 "",
             ]
         )
@@ -971,6 +1013,8 @@ def search_duplicates(repo: str, terms: str, limit: int) -> dict[str, Any]:
                     public_result.get("items"), list
                 ):
                     raise RadarError("公开搜索结果格式异常")
+                if public_result.get("incomplete_results"):
+                    raise RadarError("公开搜索结果不完整，请稍后重试")
                 result[key] = normalize_search_results(public_result["items"], repo)
             except RadarError as public_error:
                 result[key] = []
@@ -1191,6 +1235,11 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("--max-repos", type=int, default=12)
     scan_parser.add_argument("--max-issues", type=int, default=5)
     scan_parser.add_argument("--language")
+    scan_parser.add_argument("--random-seed", type=int, help="复现随机选择的种子（0 到 4294967295）")
+    scan_parser.add_argument(
+        "--exclude-repo", action="append", default=[], metavar="OWNER/REPO",
+        help="排除已充分检查或课堂已分配的仓库；可重复指定",
+    )
     scan_parser.add_argument("--output", type=Path, default=Path("contribution-report.json"))
     scan_parser.add_argument("--markdown", type=Path, default=Path("contribution-report.md"))
     scan_parser.add_argument("--force", action="store_true", help="原子覆盖已存在的本地报告")
@@ -1225,7 +1274,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             max_issues = bounded_int(args.max_issues, "--max-issues", 1, 20)
             validate_output_paths(args.seed, args.output, args.markdown, args.force)
             seed = load_seed(args.seed)
-            report = scan(seed, max_repos, max_issues, args.language)
+            report = scan(
+                seed, max_repos, max_issues, args.language,
+                random_seed=args.random_seed, exclude_repos=args.exclude_repo,
+            )
             if not report["repositories"]:
                 details = "; ".join(
                     f"{item['repo']}: {item['error']}" for item in report["errors"][:3]

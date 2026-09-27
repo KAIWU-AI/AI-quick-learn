@@ -11,16 +11,18 @@
 
 ## 本地验证
 
+Windows 下将 `python3` 替换为 `py -3`，或使用当前 Python 解释器的命令。
+
 ```bash
-python3 -m unittest discover -s skills/open-source-pr-contributor/tests -v
+python3 -m unittest discover -s skills/open-source-contributor/tests -v
 python3 -m unittest discover -s tests -v
-python3 skills/open-source-pr-contributor/scripts/contribution_radar.py doctor
+python3 skills/open-source-contributor/scripts/contribution_radar.py doctor
 ```
 
 涉及在线扫描时，可用少量公开仓库做验证：
 
 ```bash
-python3 skills/open-source-pr-contributor/scripts/contribution_radar.py scan --max-repos 2 --max-issues 2
+python3 skills/open-source-contributor/scripts/contribution_radar.py scan --max-repos 2 --max-issues 2
 ```
 
 ## PR 内容

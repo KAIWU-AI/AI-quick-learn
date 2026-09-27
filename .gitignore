@@ -3,3 +3,10 @@ __pycache__/
 .DS_Store
 contribution-report.json
 contribution-report.md
+.venv-demos/
+.env
+.env.*
+!.env.example
+demo1/result.html
+demo2/result.html
+demo3/result.html

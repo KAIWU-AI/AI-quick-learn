@@ -1,0 +1,4 @@
+# The current OpenAI SDK requires Python 3.10 or newer.
+openai>=2.54,<3
+azure-identity>=1.25,<2
+python-dotenv>=1.0,<2

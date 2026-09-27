@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把 open-source-pr-contributor 技能安装到常见 Coding Agent 目录。"""
+"""把 open-source-contributor 技能安装到常见 Coding Agent 目录。"""
 
 from __future__ import annotations
 
@@ -9,12 +9,13 @@ import json
 import os
 import shlex
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent
-SOURCE = REPO_ROOT / "skills" / "open-source-pr-contributor"
+SKILL_NAME = "open-source-contributor"
+LEGACY_SKILL_NAME = "open-source-pr-contributor"
+SOURCE = REPO_ROOT / "skills" / SKILL_NAME
 DEFAULT_ROOTS = {
     "hermes": Path.home() / ".hermes" / "skills",
     "claude": Path.home() / ".claude" / "skills",
@@ -45,11 +46,14 @@ def validate_skill_tree(root: Path) -> None:
     pool_file = root / "references" / "repository-pool.json"
     if not skill_file.is_file() or not script_file.is_file() or not pool_file.is_file():
         raise RuntimeError("技能目录不完整：缺少 SKILL.md、扫描脚本或候选池")
+    for name in ("pr-workflow.md", "contribution-fallback.md", "multi-agent-workflow.md"):
+        if not (root / "references" / name).is_file():
+            raise RuntimeError(f"技能目录不完整：缺少 references/{name}")
     try:
         content = skill_file.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         raise RuntimeError("SKILL.md 无法读取") from exc
-    if not content.startswith("---\n") or "name: open-source-pr-contributor" not in content:
+    if not content.startswith("---\n") or f"name: {SKILL_NAME}" not in content:
         raise RuntimeError("SKILL.md frontmatter 无效")
     try:
         pool = json.loads(pool_file.read_text(encoding="utf-8"))
@@ -100,7 +104,7 @@ def resolve_destination(args: argparse.Namespace) -> Path:
         root = args.target.expanduser()
     else:
         root = DEFAULT_ROOTS[args.agent]
-    destination = root.absolute() / "open-source-pr-contributor"
+    destination = root.absolute() / SKILL_NAME
     source_real = SOURCE.resolve()
     destination_real = destination.resolve(strict=False)
     if destination_real == source_real or source_real in destination_real.parents:
@@ -140,11 +144,25 @@ def install(destination: Path, force: bool, dry_run: bool) -> Path | None:
     return backup
 
 
+def verification_command(destination: Path) -> str:
+    command = [sys.executable, str(destination / "scripts" / "contribution_radar.py"), "doctor"]
+    if os.name == "nt":
+        return "& " + " ".join("'" + argument.replace("'", "''") + "'" for argument in command)
+    return shlex.join(command)
+
+
 def main() -> int:
     args = parse_args()
     try:
         validate_source()
         destination = resolve_destination(args)
+        legacy = destination.with_name(LEGACY_SKILL_NAME)
+        if legacy.exists() or legacy.is_symlink():
+            print(
+                f"注意：旧名称技能仍在 {legacy}，本次不会修改它。"
+                "新版本安装成功后，请将旧目录移到技能根目录之外，避免重复加载。",
+                file=sys.stderr,
+            )
         backup = install(destination, args.force, args.dry_run)
     except (OSError, RuntimeError) as exc:
         print(f"安装失败：{exc}", file=sys.stderr)
@@ -155,9 +173,8 @@ def main() -> int:
         print(f"旧版本备份：{backup}")
     if not args.dry_run:
         print("请重启或新建 Coding Agent 会话，使技能索引重新加载。")
-        command = [sys.executable, str(destination / "scripts" / "contribution_radar.py"), "doctor"]
-        rendered = subprocess.list2cmdline(command) if os.name == "nt" else shlex.join(command)
-        print(f"验证命令：{rendered}")
+        shell = "PowerShell" if os.name == "nt" else "POSIX shell"
+        print(f"验证命令（{shell}）：{verification_command(destination)}")
     return 0
 
 

@@ -18,6 +18,8 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.9"
           - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
             python-version: "3.13"
           - os: macos-latest
             python-version: "3.13"
@@ -31,8 +33,14 @@ jobs:
       - name: Compile
         run: |
           python -m py_compile install.py
-          python -m py_compile skills/open-source-pr-contributor/scripts/contribution_radar.py
+          python -m py_compile skills/open-source-contributor/scripts/contribution_radar.py
       - name: Test skill
-        run: python -m unittest discover -s skills/open-source-pr-contributor/tests -v
+        run: python -m unittest discover -s skills/open-source-contributor/tests -v
       - name: Test installer
         run: python -m unittest discover -s tests -v
+      - name: Install demo dependencies
+        if: matrix.python-version != '3.9'
+        run: python -m pip install -r requirements-demos.txt
+      - name: Test demos without API credentials
+        if: matrix.python-version != '3.9'
+        run: python -m unittest discover -s demo_tests -v

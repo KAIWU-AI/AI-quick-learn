@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from contextlib import redirect_stderr, redirect_stdout
+import copy
 import datetime as dt
 import importlib.util
 import io
 import json
+import random
 import tempfile
 import unittest
 from pathlib import Path
@@ -109,10 +111,21 @@ class ContributionRadarTests(unittest.TestCase):
     def test_default_seed_is_valid_and_broad(self) -> None:
         data = radar.load_seed(radar.DEFAULT_SEED)
         repositories = data["repositories"]
-        self.assertGreaterEqual(len(repositories), 20)
+        self.assertEqual(len(repositories), 30)
         self.assertEqual(len({item["repo"].lower() for item in repositories}), len(repositories))
         skill_repositories = [item for item in repositories if item["category"] == "Agent Skill"]
-        self.assertGreaterEqual(len(skill_repositories), 6)
+        self.assertEqual(len(skill_repositories), 8)
+        additions = {
+            "urllib3/urllib3", "python-attrs/attrs", "marshmallow-code/marshmallow",
+            "jd/tenacity", "Delgan/loguru", "pyparsing/pyparsing",
+        }
+        for item in repositories:
+            if item["repo"] in additions:
+                self.assertEqual(item["language"], "Python")
+                self.assertEqual(set(item["setup"]["required_commands"]), {"git", "python3"})
+                self.assertGreaterEqual(item["stars_snapshot"], 2000)
+        self.assertTrue(additions.issubset(item["repo"] for item in repositories))
+        self.assertNotIn("microsoft/HydraLab", {item["repo"] for item in repositories})
         removed_heavy_repositories = {
             "openclaw/openclaw",
             "pydantic/pydantic",
@@ -172,6 +185,12 @@ class ContributionRadarTests(unittest.TestCase):
         with mock.patch.object(radar.shutil, "which", side_effect=fake_which):
             environment = radar.detect_local_environment()
         self.assertTrue(environment["commands"]["python3"])
+
+    def test_detect_environment_accepts_running_python_outside_path(self) -> None:
+        with mock.patch.object(radar.shutil, "which", return_value=None):
+            environment = radar.detect_local_environment()
+        self.assertTrue(environment["commands"]["python3"])
+        self.assertFalse(environment["commands"]["git"])
 
     def test_recommendation_prefers_runtime_bug_over_metadata_cleanup(self) -> None:
         common = {
@@ -403,6 +422,113 @@ class ContributionRadarTests(unittest.TestCase):
         self.assertEqual(inspected, ["owner/custom"])
         self.assertTrue(report["local_environment"]["commands"]["custom-validator"])
 
+    def test_classroom_randomization_is_reproducible_diverse_and_excludable(self) -> None:
+        seed = {"repositories": [
+            {
+                "repo": f"owner/repo-{index}",
+                "language": "Python",
+                "difficulty": "low",
+                "setup": {"level": "light", "required_commands": ["python3"], "platforms": ["windows"]},
+            }
+            for index in range(30)
+        ]}
+        original = copy.deepcopy(seed)
+        environment = {"platform": "windows", "commands": {"python3": True}}
+
+        def inspect(repo: str, max_issues: int) -> dict[str, object]:
+            return {
+                "repo": repo, "license": "MIT", "language": "Python",
+                "repository_signal_score": 40,
+                "issue_leads": [{
+                    "number": 1, "title": "Parser crashes", "url": f"https://github.com/{repo}/issues/1",
+                    "labels": ["bug"], "assignees": [], "linked_pull_requests": [],
+                    "updated_at": "2099-01-01T00:00:00Z", "signal_score": 40,
+                }],
+            }
+
+        with mock.patch.object(radar, "inspect_repository", side_effect=inspect):
+            first = radar.scan(seed, 12, 5, None, environment, random_seed=42)
+            repeated = radar.scan(seed, 12, 5, None, environment, random_seed=42)
+            self.assertEqual(first["attempted_repositories"], repeated["attempted_repositories"])
+            self.assertEqual(first["recommended_opportunity"], repeated["recommended_opportunity"])
+            self.assertEqual(first["selection"]["random_seed"], 42)
+            self.assertIn("随机种子：`42`", radar.markdown_report(first))
+            winners = set()
+            for value in range(100):
+                report = radar.scan(seed, 12, 5, None, environment, random_seed=value)
+                winners.add(report["recommended_opportunity"]["repo"])
+            self.assertGreaterEqual(len(winners), 25)
+            checked: set[str] = set()
+            for value in range(3):
+                report = radar.scan(
+                    seed, 12, 5, None, environment, random_seed=value,
+                    exclude_repos=[repo.upper() for repo in checked],
+                )
+                attempted = set(report["attempted_repositories"])
+                self.assertTrue(attempted.isdisjoint(checked))
+                checked.update(attempted)
+            self.assertEqual(len(checked), 30)
+        self.assertEqual(seed, original)
+
+    def test_random_recommendation_preserves_quality_and_one_vote_per_repo(self) -> None:
+        common = {
+            "license": "MIT", "local_fit": {"compatible": True, "score": 30},
+            "seed": {"difficulty": "low"},
+            "issue_leads": [{
+                "number": 1, "title": "Parser crashes", "labels": ["bug"],
+                "assignees": [], "linked_pull_requests": [], "signal_score": 40,
+                "updated_at": "2099-01-01T00:00:00Z",
+            }],
+        }
+        repositories = [
+            {**copy.deepcopy(common), "repo": "owner/best", "repository_signal_score": 40},
+            {**copy.deepcopy(common), "repo": "owner/close", "repository_signal_score": 30},
+            {**copy.deepcopy(common), "repo": "owner/low", "repository_signal_score": 29},
+            {**copy.deepcopy(common), "repo": "owner/assigned", "repository_signal_score": 40},
+            {**copy.deepcopy(common), "repo": "owner/linked", "repository_signal_score": 40},
+            {**copy.deepcopy(common), "repo": "owner/unknown", "repository_signal_score": 40},
+            {**copy.deepcopy(common), "repo": "owner/incompatible", "repository_signal_score": 40},
+        ]
+        repositories[0]["issue_leads"] = [
+            {**common["issue_leads"][0], "number": index} for index in range(1, 21)
+        ]
+        repositories[3]["issue_leads"][0]["assignees"] = ["contributor"]
+        repositories[4]["issue_leads"][0]["linked_pull_requests"] = ["https://github.com/owner/linked/pull/2"]
+        repositories[5]["issue_leads"][0]["linked_pull_requests"] = None
+        repositories[6]["local_fit"]["compatible"] = False
+        rng = mock.Mock(spec=random.Random)
+        rng.choice.side_effect = lambda choices: choices[0]
+        radar.select_recommended_opportunity(repositories, rng=rng)
+        choices = rng.choice.call_args.args[0]
+        self.assertEqual([item["repo"] for item in choices], ["owner/best", "owner/close"])
+
+    def test_scan_generates_seed_and_validates_random_options_before_network(self) -> None:
+        with mock.patch.object(radar.secrets, "randbits", return_value=123), mock.patch.object(
+            radar, "inspect_repository"
+        ) as inspect:
+            report = radar.scan({"repositories": []}, 1, 1, None, environment={})
+            self.assertEqual(report["selection"]["random_seed"], 123)
+            self.assertIsNone(report["recommended_opportunity"])
+            for value in (-1, 2**32):
+                with self.assertRaises(radar.RadarError):
+                    radar.scan({"repositories": []}, 1, 1, None, environment={}, random_seed=value)
+            with self.assertRaises(radar.RadarError):
+                radar.scan({"repositories": []}, 1, 1, None, environment={}, exclude_repos=["not-a-repo"])
+            inspect.assert_not_called()
+
+    def test_scan_cli_passes_randomization_options(self) -> None:
+        with mock.patch.object(radar, "load_seed", return_value={"repositories": []}), mock.patch.object(
+            radar, "validate_output_paths"
+        ), mock.patch.object(radar, "scan", return_value={"repositories": [], "errors": []}) as scan:
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                code = radar.main([
+                    "scan", "--random-seed", "0", "--exclude-repo", "owner/first",
+                    "--exclude-repo", "owner/second",
+                ])
+        self.assertEqual(code, 2)
+        self.assertEqual(scan.call_args.kwargs["random_seed"], 0)
+        self.assertEqual(scan.call_args.kwargs["exclude_repos"], ["owner/first", "owner/second"])
+
     def test_markdown_report_highlights_exactly_one_recommendation(self) -> None:
         report = {
             "generated_at": "2026-09-27T00:00:00+00:00",
@@ -602,6 +728,50 @@ class ContributionRadarTests(unittest.TestCase):
             self.assertEqual(len(result[key]), 1)
             self.assertEqual(result[key][0]["repository"], "owner/repo")
 
+    def test_fetch_issues_filters_assignees_before_limit(self) -> None:
+        raw = [
+            {
+                "number": number,
+                "title": "Parser crashes on valid input",
+                "url": f"https://github.com/owner/repo/issues/{number}",
+                "labels": [{"name": label} for label in ("bug", "good first issue", "help wanted")],
+                "updatedAt": "2099-01-01T00:00:00Z",
+                "assignees": [{"login": "contributor"}] if number <= 5 else [],
+                "closedByPullRequestsReferences": [],
+            }
+            for number in range(1, 7)
+        ]
+        with mock.patch.object(radar, "gh_json", return_value=raw):
+            issues = radar.fetch_issues("owner/repo", limit=5)
+        self.assertEqual([issue["number"] for issue in issues], [6])
+        recommendation = radar.select_recommended_opportunity([{
+            "repo": "owner/repo",
+            "license": "MIT",
+            "local_fit": {"compatible": True, "score": 30},
+            "issue_leads": issues,
+        }])
+        self.assertEqual(recommendation["issue"]["number"], 6)
+
+    def test_public_issue_search_rejects_incomplete_results(self) -> None:
+        with mock.patch.object(
+            radar, "api_json", return_value={"items": [], "incomplete_results": True}
+        ):
+            with self.assertRaisesRegex(radar.RadarError, "不完整"):
+                radar.public_issue_search("owner/repo", "", 5)
+
+    def test_duplicate_cli_rejects_incomplete_fallback_results(self) -> None:
+        output = io.StringIO()
+        with mock.patch.object(
+            radar, "gh_json", side_effect=radar.RadarError("SSO")
+        ), mock.patch.object(
+            radar, "public_api_json", return_value={"items": [], "incomplete_results": True}
+        ), redirect_stdout(output):
+            code = radar.main(["duplicates", "owner/repo", "parser failure"])
+        self.assertEqual(code, 2)
+        result = json.loads(output.getvalue())
+        self.assertEqual(set(result["errors"]), {"open_issues", "closed_issues", "open_prs", "closed_prs"})
+        self.assertTrue(all("不完整" in error for error in result["errors"].values()))
+
     def test_search_results_reject_wrong_repository(self) -> None:
         with self.assertRaises(radar.RadarError):
             radar.normalize_search_results(
@@ -719,7 +889,7 @@ class ContributionRadarTests(unittest.TestCase):
             setattr(
                 radar,
                 "scan",
-                lambda seed, max_repos, max_issues, language: {
+                lambda seed, max_repos, max_issues, language, **kwargs: {
                     "schema_version": 1,
                     "generated_at": "2026-09-26T00:00:00+00:00",
                     "source_snapshot_date": "2026-09-26",

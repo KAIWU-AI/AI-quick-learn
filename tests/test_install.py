@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -36,10 +39,13 @@ class InstallerTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            installed = target / "open-source-pr-contributor"
+            installed = target / "open-source-contributor"
             self.assertTrue((installed / "SKILL.md").is_file())
             self.assertTrue((installed / "scripts" / "contribution_radar.py").is_file())
             self.assertTrue((installed / "references" / "repository-pool.json").is_file())
+            self.assertTrue((installed / "references" / "contribution-fallback.md").is_file())
+            self.assertTrue((installed / "references" / "pr-workflow.md").is_file())
+            self.assertTrue((installed / "references" / "multi-agent-workflow.md").is_file())
             legacy_env = os.environ.copy()
             legacy_env["PYTHONIOENCODING"] = "cp1252"
             smoke = subprocess.run(
@@ -74,6 +80,56 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(second.returncode, 2)
             self.assertIn("--force", second.stderr)
 
+    def test_rename_preserves_legacy_installation_and_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "skills"
+            legacy = target / "open-source-pr-contributor"
+            legacy.mkdir(parents=True)
+            marker = legacy / "local-marker.txt"
+            marker.write_text("keep", encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, str(INSTALLER), "--agent", "custom", "--target", str(target)],
+                check=False, capture_output=True, text=True, encoding="utf-8",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertTrue((target / "open-source-contributor" / "SKILL.md").is_file())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
+            self.assertIn("旧名称技能", completed.stderr)
+
+    def test_verification_command_quotes_for_each_shell(self) -> None:
+        destination = Path("space and 'quote $value") / "skills"
+        executable = "Python Program Files/python's.exe"
+        command = [executable, str(destination / "scripts" / "contribution_radar.py"), "doctor"]
+        with mock.patch.object(installer.sys, "executable", executable):
+            with mock.patch.object(installer.os, "name", "nt"):
+                rendered = installer.verification_command(destination)
+                self.assertEqual(
+                    rendered,
+                    "& " + " ".join("'" + arg.replace("'", "''") + "'" for arg in command),
+                )
+            with mock.patch.object(installer.os, "name", "posix"):
+                self.assertEqual(shlex.split(installer.verification_command(destination)), command)
+
+    @unittest.skipUnless(os.name == "nt", "PowerShell execution requires Windows")
+    def test_powershell_verification_command_preserves_special_paths(self) -> None:
+        shell = shutil.which("pwsh") or shutil.which("powershell")
+        if not shell:
+            self.skipTest("PowerShell is not installed")
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "中文 space's $value & path"
+            script = destination / "scripts" / "contribution_radar.py"
+            script.parent.mkdir(parents=True)
+            script.write_text(
+                "import json, sys\nprint(json.dumps(sys.argv))\n", encoding="utf-8"
+            )
+            completed = subprocess.run(
+                [shell, "-NoProfile", "-NonInteractive", "-Command",
+                 installer.verification_command(destination)],
+                check=False, capture_output=True, text=True, encoding="utf-8",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(json.loads(completed.stdout), [str(script), "doctor"])
+
     def test_force_update_creates_backup(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "skills"
@@ -88,7 +144,7 @@ class InstallerTests(unittest.TestCase):
             first = subprocess.run(
                 command, check=False, capture_output=True, text=True, encoding="utf-8"
             )
-            installed = target / "open-source-pr-contributor"
+            installed = target / "open-source-contributor"
             marker = installed / "local-marker.txt"
             marker.write_text("old", encoding="utf-8")
             updated = subprocess.run(
@@ -100,7 +156,7 @@ class InstallerTests(unittest.TestCase):
             )
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual(updated.returncode, 0, updated.stderr)
-            backups = list(target.glob("open-source-pr-contributor.backup-*"))
+            backups = list(target.glob("open-source-contributor.backup-*"))
             self.assertEqual(len(backups), 1)
             self.assertEqual((backups[0] / "local-marker.txt").read_text(), "old")
             self.assertFalse(marker.exists())
@@ -110,7 +166,7 @@ class InstallerTests(unittest.TestCase):
             root = Path(directory)
             (root / "scripts").mkdir()
             (root / "SKILL.md").write_text(
-                "---\nname: open-source-pr-contributor\ndescription: x\n---\nbody\n",
+                "---\nname: open-source-contributor\ndescription: x\n---\nbody\n",
                 encoding="utf-8",
             )
             (root / "scripts" / "contribution_radar.py").write_text("", encoding="utf-8")
@@ -122,8 +178,10 @@ class InstallerTests(unittest.TestCase):
             root = Path(directory)
             (root / "scripts").mkdir()
             (root / "references").mkdir()
+            for name in ("pr-workflow.md", "contribution-fallback.md", "multi-agent-workflow.md"):
+                (root / "references" / name).write_text("reference", encoding="utf-8")
             (root / "SKILL.md").write_text(
-                "---\nname: open-source-pr-contributor\ndescription: x\n---\nbody\n",
+                "---\nname: open-source-contributor\ndescription: x\n---\nbody\n",
                 encoding="utf-8",
             )
             (root / "scripts" / "contribution_radar.py").write_text("", encoding="utf-8")
@@ -135,9 +193,25 @@ class InstallerTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 installer.validate_skill_tree(root)
 
+    def test_validation_requires_fallback_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skill"
+            shutil.copytree(installer.SOURCE, root)
+            (root / "references" / "contribution-fallback.md").unlink()
+            with self.assertRaisesRegex(RuntimeError, "contribution-fallback.md"):
+                installer.validate_skill_tree(root)
+
+    def test_validation_requires_multi_agent_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skill"
+            shutil.copytree(installer.SOURCE, root)
+            (root / "references" / "multi-agent-workflow.md").unlink()
+            with self.assertRaisesRegex(RuntimeError, "multi-agent-workflow.md"):
+                installer.validate_skill_tree(root)
+
     def test_failed_force_update_restores_previous_installation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            destination = Path(directory) / "open-source-pr-contributor"
+            destination = Path(directory) / "open-source-contributor"
             destination.mkdir()
             marker = destination / "local-marker.txt"
             marker.write_text("keep", encoding="utf-8")
@@ -148,7 +222,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_failed_post_copy_validation_restores_previous_installation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            destination = Path(directory) / "open-source-pr-contributor"
+            destination = Path(directory) / "open-source-contributor"
             destination.mkdir()
             marker = destination / "local-marker.txt"
             marker.write_text("keep", encoding="utf-8")
@@ -180,7 +254,7 @@ class InstallerTests(unittest.TestCase):
                         env=env,
                     )
                     self.assertEqual(completed.returncode, 0, completed.stderr)
-                    expected = Path(directory) / relative_root / "open-source-pr-contributor"
+                    expected = Path(directory) / relative_root / "open-source-contributor"
                     self.assertIn(str(expected), completed.stdout)
 
     def test_cli_uses_utf8_when_parent_stdio_is_legacy(self) -> None:

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "snapshot_date": "2026-09-27",
-  "description": "优先收录依赖轻、可在普通开发机本地验证、近期有外部贡献合并记录的项目。stars_snapshot 只是快照，扫描时会读取实时数据。",
+  "description": "30 个教学候选，保留 8 个 Agent Skill 仓库并扩充轻量 Python 库。优先选择无需部署服务即可聚焦验证的问题；入池不代表当前 Issue 已可贡献。stars_snapshot 只是快照，扫描时会读取实时数据。",
   "repositories": [
     {
       "repo": "vercel-labs/skills",
@@ -101,6 +101,78 @@
       "difficulty": "low",
       "stars_snapshot": 57441,
       "reason": "纯 Python 终端渲染库，可用小型输入验证布局、平台输出和边界行为。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "pallets/click",
+      "category": "CLI 工具",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 17770,
+      "reason": "BSD-3-Clause 许可的跨平台 CLI 库；当前开发分支要求 Python 3.10+，pytest 可聚焦参数解析、路径和终端行为，完整开发流程使用 uv/tox。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "python-jsonschema/jsonschema",
+      "category": "数据校验",
+      "language": "Python",
+      "difficulty": "medium",
+      "stars_snapshot": 4986,
+      "reason": "MIT 许可，贡献指南欢迎附带测试的修复；当前要求 Python 3.10+，适合用小型 schema/instance 离线复现。需确认 rpds-py 有本机 wheel，否则可能需要 Rust 编译环境。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "urllib3/urllib3",
+      "category": "网络库",
+      "language": "Python",
+      "difficulty": "medium",
+      "stars_snapshot": 4064,
+      "reason": "广泛使用的 HTTP 基础库，MIT 许可，当前要求 Python 3.10+。优先选择 URL、头部、重试等离线逻辑；完整网络/TLS 测试依赖较多，不作为课堂起点。",
+      "setup": {"level": "moderate", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "python-attrs/attrs",
+      "category": "Python 基础设施",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 5847,
+      "reason": "知名数据类工具，MIT 许可，无运行时依赖，当前要求 Python 3.10+。适合验证器、转换器和继承边界；测试依赖按项目声明安装。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "marshmallow-code/marshmallow",
+      "category": "数据校验",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 7241,
+      "reason": "成熟的序列化与校验库，MIT 许可，当前要求 Python 3.10+。可用小型 schema 和数据验证字段、错误信息及嵌套行为，无需部署数据库。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "jd/tenacity",
+      "category": "可靠性工具",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 8798,
+      "reason": "常用重试库，Apache-2.0 许可，当前要求 Python 3.10+。适合用 mock 时钟和函数测试重试、停止和回调，不依赖真实 API。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "Delgan/loguru",
+      "category": "日志工具",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 24132,
+      "reason": "知名 Python 日志库，MIT 许可。适合用临时文件或内存 sink 验证格式、过滤和异常输出；多进程与平台专属用例需另行核实。",
+      "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
+    },
+    {
+      "repo": "pyparsing/pyparsing",
+      "category": "解析工具",
+      "language": "Python",
+      "difficulty": "low",
+      "stars_snapshot": 2492,
+      "reason": "成熟的纯 Python 解析库，MIT 许可，当前要求 Python 3.9+。用短语法和字符串即可复现解析边界，无需外部服务。",
       "setup": {"level": "light", "required_commands": ["git", "python3"], "platforms": ["linux", "macos", "windows"]}
     },
     {
