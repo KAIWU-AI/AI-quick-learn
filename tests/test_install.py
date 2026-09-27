@@ -51,6 +51,7 @@ class InstallerTests(unittest.TestCase):
                 env=legacy_env,
             )
             self.assertEqual(smoke.returncode, 0, smoke.stderr)
+            self.assertIn("开源贡献候选扫描器", smoke.stdout)
 
     def test_refuses_overwrite_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -167,6 +168,7 @@ class InstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             env = os.environ.copy()
             env["HOME"] = directory
+            env["USERPROFILE"] = directory
             for agent, relative_root in expected_roots.items():
                 with self.subTest(agent=agent):
                     completed = subprocess.run(
