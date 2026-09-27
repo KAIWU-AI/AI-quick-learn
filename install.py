@@ -22,6 +22,14 @@ DEFAULT_ROOTS = {
 }
 
 
+def configure_utf8_stdio() -> None:
+    """Keep Chinese CLI output usable when Windows redirects output."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="安装高质量开源贡献技能")
     parser.add_argument("--agent", choices=[*DEFAULT_ROOTS, "custom"], default="hermes")
@@ -154,4 +162,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    configure_utf8_stdio()
     raise SystemExit(main())

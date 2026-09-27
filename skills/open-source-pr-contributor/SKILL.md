@@ -1,7 +1,7 @@
 ---
 name: open-source-pr-contributor
 description: 指导 Agent 发现、验证并提交高质量开源贡献.
-version: 0.3.1
+version: 0.3.2
 author: KAIWU-AI Contributors
 license: MIT
 platforms: [linux, macos, windows]

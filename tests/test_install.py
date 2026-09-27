@@ -33,17 +33,22 @@ class InstallerTests(unittest.TestCase):
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             installed = target / "open-source-pr-contributor"
             self.assertTrue((installed / "SKILL.md").is_file())
             self.assertTrue((installed / "scripts" / "contribution_radar.py").is_file())
             self.assertTrue((installed / "references" / "repository-pool.json").is_file())
+            legacy_env = os.environ.copy()
+            legacy_env["PYTHONIOENCODING"] = "cp1252"
             smoke = subprocess.run(
                 [sys.executable, str(installed / "scripts" / "contribution_radar.py"), "--help"],
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                env=legacy_env,
             )
             self.assertEqual(smoke.returncode, 0, smoke.stderr)
 
@@ -58,8 +63,12 @@ class InstallerTests(unittest.TestCase):
                 "--target",
                 str(target),
             ]
-            first = subprocess.run(command, check=False, capture_output=True, text=True)
-            second = subprocess.run(command, check=False, capture_output=True, text=True)
+            first = subprocess.run(
+                command, check=False, capture_output=True, text=True, encoding="utf-8"
+            )
+            second = subprocess.run(
+                command, check=False, capture_output=True, text=True, encoding="utf-8"
+            )
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual(second.returncode, 2)
             self.assertIn("--force", second.stderr)
@@ -75,12 +84,18 @@ class InstallerTests(unittest.TestCase):
                 "--target",
                 str(target),
             ]
-            first = subprocess.run(command, check=False, capture_output=True, text=True)
+            first = subprocess.run(
+                command, check=False, capture_output=True, text=True, encoding="utf-8"
+            )
             installed = target / "open-source-pr-contributor"
             marker = installed / "local-marker.txt"
             marker.write_text("old", encoding="utf-8")
             updated = subprocess.run(
-                [*command, "--force"], check=False, capture_output=True, text=True
+                [*command, "--force"],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             )
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual(updated.returncode, 0, updated.stderr)
@@ -159,11 +174,35 @@ class InstallerTests(unittest.TestCase):
                         check=False,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
                         env=env,
                     )
                     self.assertEqual(completed.returncode, 0, completed.stderr)
                     expected = Path(directory) / relative_root / "open-source-pr-contributor"
                     self.assertIn(str(expected), completed.stdout)
+
+    def test_cli_uses_utf8_when_parent_stdio_is_legacy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "cp1252"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(INSTALLER),
+                    "--agent",
+                    "custom",
+                    "--target",
+                    str(Path(directory) / "skills"),
+                    "--dry-run",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("将安装", completed.stdout)
 
     def test_refuses_installing_source_into_itself(self) -> None:
         completed = subprocess.run(
@@ -179,6 +218,7 @@ class InstallerTests(unittest.TestCase):
             check=False,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         self.assertEqual(completed.returncode, 2)
         self.assertIn("源码目录", completed.stderr)

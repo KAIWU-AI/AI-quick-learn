@@ -86,6 +86,14 @@ class RadarError(RuntimeError):
     """可预期、适合直接展示给用户的错误。"""
 
 
+def configure_utf8_stdio() -> None:
+    """Keep Chinese CLI output usable when Windows redirects output."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 def redact(text: str) -> str:
     """清理常见 GitHub 凭据，避免错误输出泄漏 token。"""
     cleaned = text
@@ -1255,4 +1263,5 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    configure_utf8_stdio()
     raise SystemExit(main())
