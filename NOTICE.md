@@ -5,7 +5,7 @@
 - `open-source-repo-portfolio` v1.3.4，SHA-256：`912af8331758869e3620799638908c017d6e7dddf394f99f6eff1cf3ad360673`
 - `trending-open-source-contributor` v1.5.0，SHA-256：`cf18150e43ce42908a49f4f888c661ca29d19f2833f005a852c2c28feae7b106`
 
-原始技能作者标记为 Hermes Agent。本仓库由 KAIWU-AI Contributors 继续改编与维护。
+原始技能作者标记为 Hermes Agent。
 
 ## 保留的核心方法
 

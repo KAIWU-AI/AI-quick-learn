@@ -1,8 +1,8 @@
 ---
 name: open-source-pr-contributor
 description: 指导 Agent 发现、验证并提交高质量开源贡献.
-version: 0.3.2
-author: KAIWU-AI Contributors
+version: 0.3.3
+author: Bryan Nathan
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -79,7 +79,7 @@ gh pr view PR_URL --json url,state,headRefOid,files,statusCheckRollup
 gh pr checks PR_URL
 ```
 
-分支、remote、PR 正文和回读等补充示例见 [`references/pr-workflow.md`](references/pr-workflow.md)。提交身份使用当前操作者自己的 GitHub 与 Git 配置，不写死技能作者或其他账号。
+分支、remote、PR 正文和回读等补充示例见 [`references/pr-workflow.md`](references/pr-workflow.md)。提交时沿用当前环境已有的 Git 配置，不主动改写作者身份。
 
 ### 2. 收敛到一个机会
 
