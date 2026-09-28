@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:,"><title>__TITLE__</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"./assets/vendor/three.module.min.js"}}</script>
+<script src="assets/vendor/gsap.min.js"></script>
+</head><body><main id="architecture" data-composition-id="architecture" data-start="0" data-duration="__DURATION__" data-width="1920" data-height="1080">
+<canvas id="backdrop" aria-hidden="true" data-layout-ignore></canvas>
+<canvas id="world" aria-label="三维代码架构及组件数据流"></canvas>
+<div id="header"><b>__TITLE__</b><span>__STATUS__</span></div>
+<div id="labels"></div><div id="flow-status"></div>
+__AUDIO__
+<div id="error" role="alert"></div></main>
+<script id="architecture-data" type="application/json">__CONFIG__</script>
+<script type="module">
+import {initialize} from './runtime/scene.js';
+try {
+ const config=JSON.parse(document.querySelector('#architecture-data').textContent);
+ window.__timelines=window.__timelines||{};
+ const {timeline}=await initialize(config);
+ window.__timelines.architecture=timeline;
+ window.architectureReady=true;
+}catch(error){
+ document.querySelector('#error').textContent='架构加载失败：'+error.message;
+ document.querySelector('#error').style.display='block';
+ window.architectureFailure=String(error);console.error(error);
+}
+</script></body></html>

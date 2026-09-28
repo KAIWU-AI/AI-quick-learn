@@ -4,7 +4,7 @@ description: 以交付真实开源 PR 为目标。主 Agent 筛选仓库，多�
 license: MIT
 compatibility: Requires Python 3.9+, Git, gh and GitHub access on Linux, macOS or Windows. Uses the host's native subagent tools when available; otherwise runs sequentially.
 metadata:
-  version: "0.7.1"
+  version: "0.7.2"
   author: "Bryan Nathan"
   tags: "github, open-source, pull-request, contribution, multi-agent"
   execution-mode: "capability-adaptive-multi-agent"
@@ -67,6 +67,8 @@ Issue 可能已经过期、被修复、被认领或存在相关 PR。开始实�
 
 主 Agent 保留初筛、候选分配、证据汇总、最终审查、用户授权和公开写入职责。仓库负责人子 Agent 在各自工作区完整推进调研、选题、复现、实现和测试，不以“找到 Issue”作为任务终点，不自行发布、不继续生成子 Agent。若本技能在已获派的子任务中加载，直接按该子任务范围执行并返回，跳过再次调度。
 
+**工作区隔离不要求把 GitHub 发布放进子 Agent 的 sandbox。** 本技能不启用或关闭 sandbox；主 Agent 在派发实现任务前，必须读取 [`references/pr-workflow.md`](references/pr-workflow.md) 的“发布环境与认证预检”，确认宿主允许的发布入口和账号。子 Agent 缺少 GitHub 登录不等于整个任务无法发布；它交回补丁，由主 Agent 使用已授权的发布环境完成远端操作。
+
 ### 1. 主 Agent 初筛并分配仓库
 
 先检查本机环境，再使用候选池、相关生态、近期 Issue 和项目历史寻找问题。优先考虑近期活跃、接受外部贡献、测试条件清晰且维护者明确欢迎的问题。
@@ -128,6 +130,8 @@ gh pr checks PR_URL
 发布前审查完整 diff，确认范围、兼容性、测试有效性和公开文本准确。再次检查上游状态和重复工作。PR 应聚焦问题、影响、改动和实际测试，不写内部工作流或未经验证的结论。
 
 主 Agent 核对验证结果对应当前补丁，处理子 Agent 的分歧、超时或失败；缺少关键证据就保持未完成。补丁变动后重新验证。公开操作仅由主 Agent 在用户授权范围内进行，不把授权扩散给子 Agent。
+
+发布认证失败时按 PR 工作流区分隔离环境凭据不可用、登录失效、仓库权限/SSO 和网络问题。经宿主支持的审批或用户登录恢复发布路径后，由主 Agent 继续执行，不因子 Agent 的认证失败丢弃已验证补丁，也不把这类阻塞直接当作 HydraLab fallback 的依据。
 
 每个达到发布门槛的仓库独立提交，不等待所有子任务结束，也不把不同仓库的补丁合到同一个分支。缺少发布授权时，主 Agent 提交具体目标、账号、范围和内容供用户确认，不停在“你可以自行提交”的建议。创建请求结果不明时先查询远端，避免重复 PR。已有一个 PR 后，仍处理已成熟且获授权的其他交付包；达到用户目标后停止新增探索，并妥善收尾其余任务。
 

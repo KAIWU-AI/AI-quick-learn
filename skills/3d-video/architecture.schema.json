@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 48
+    },
+    "duration": {
+      "type": "number",
+      "minimum": 8,
+      "maximum": 180
+    },
+    "theme": {
+      "enum": [
+        "space",
+        "light"
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "required": [
+          "id",
+          "locator",
+          "note"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 40
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "surface": {
+            "enum": [
+              "wood",
+              "none"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "surface"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 6
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "type": {
+            "enum": [
+              "client",
+              "service",
+              "database",
+              "agent",
+              "gate",
+              "cluster",
+              "queue",
+              "storage"
+            ]
+          },
+          "group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": -40,
+              "maximum": 40
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "status": {
+            "enum": [
+              "implemented",
+              "planned",
+              "illustrative"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 12
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "detail",
+          "type",
+          "group",
+          "position",
+          "status",
+          "evidence"
+        ]
+      },
+      "minItems": 2,
+      "maxItems": 12
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "kind": {
+            "enum": [
+              "request",
+              "event",
+              "result",
+              "planned"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 12
+          },
+          "via": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -40,
+                "maximum": 40
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "minItems": 0,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "label",
+          "kind",
+          "evidence"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 24
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180
+          },
+          "end": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "id",
+          "edges",
+          "start",
+          "end"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 24
+    },
+    "camera": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "time": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 12
+          },
+          "yaw": {
+            "type": "number",
+            "minimum": -3.14,
+            "maximum": 3.14
+          },
+          "pitch": {
+            "type": "number",
+            "minimum": 0.15,
+            "maximum": 1.3
+          },
+          "distance": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 120
+          }
+        },
+        "required": [
+          "time",
+          "targets",
+          "yaw",
+          "pitch"
+        ]
+      },
+      "minItems": 2,
+      "maxItems": 24
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "duration",
+    "theme",
+    "sources",
+    "groups",
+    "nodes",
+    "edges",
+    "flows",
+    "camera"
+  ]
+}

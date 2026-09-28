@@ -1,0 +1,31 @@
+{
+  "version":1,
+  "title":"数据加工与发布",
+  "duration":20,
+  "theme":"light",
+  "sources":[{"id":"example","locator":"architecture-notes.md#pipeline-example","note":"虚构异步数据流水线，用于证明不同拓扑/主题无需改渲染代码。"}],
+  "groups":[{"id":"ingest","label":"采集","surface":"none"},{"id":"compute","label":"处理","surface":"wood"},{"id":"publish","label":"发布","surface":"none"}],
+  "nodes":[
+    {"id":"source","label":"数据源","detail":"输入原始事件","type":"storage","group":"ingest","position":[-10,0],"status":"illustrative","evidence":["example"]},
+    {"id":"queue","label":"任务队列","detail":"缓冲 · 顺序分发","type":"queue","group":"ingest","position":[-3,0],"status":"illustrative","evidence":["example"]},
+    {"id":"transform","label":"数据处理","detail":"校验 · 转换 · 聚合","type":"cluster","group":"compute","position":[4,0],"status":"illustrative","evidence":["example"]},
+    {"id":"warehouse","label":"结果仓库","detail":"保存加工结果","type":"database","group":"publish","position":[11,0],"status":"illustrative","evidence":["example"]},
+    {"id":"report","label":"查询服务","detail":"按需返回数据","type":"service","group":"publish","position":[11,8],"status":"illustrative","evidence":["example"]},
+    {"id":"archive","label":"长期归档","detail":"未来离线存储","type":"storage","group":"publish","position":[4,8],"status":"planned","evidence":["example"]}
+  ],
+  "edges":[
+    {"id":"collect","from":"source","to":"queue","label":"原始事件","kind":"event","evidence":["example"]},
+    {"id":"dispatch","from":"queue","to":"transform","label":"待处理任务","kind":"event","evidence":["example"]},
+    {"id":"save","from":"transform","to":"warehouse","label":"结果数据","kind":"result","evidence":["example"]},
+    {"id":"query","from":"warehouse","to":"report","label":"查询结果","kind":"result","evidence":["example"]},
+    {"id":"future","from":"warehouse","to":"archive","label":"规划归档","kind":"planned","evidence":["example"]}
+  ],
+  "flows":[{"id":"pipeline","edges":["collect","dispatch","save","query"],"start":2,"end":16}],
+  "camera":[
+    {"time":0,"targets":["source","queue","transform","warehouse","report","archive"],"yaw":-0.12,"pitch":0.7},
+    {"time":5,"targets":["source","queue","transform"],"yaw":0.05,"pitch":0.56,"distance":29},
+    {"time":10,"targets":["transform","warehouse"],"yaw":0.30,"pitch":0.6,"distance":25},
+    {"time":16,"targets":["source","queue","transform","warehouse","report","archive"],"yaw":-0.1,"pitch":0.7},
+    {"time":20,"targets":["source","queue","transform","warehouse","report","archive"],"yaw":-0.1,"pitch":0.7}
+  ]
+}

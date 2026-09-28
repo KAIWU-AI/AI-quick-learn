@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "name": "3d-video",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 55,
+      "sha256": "8a63e93d9685253d05d6f852c84bc11f6ed8c7cbd36a7fccc42d7f5697def62f"
+    },
+    {
+      "path": "ASSETS.md",
+      "bytes": 1970,
+      "sha256": "99058da3b4557561671b7c986389cc4761521e334b16a0d1940adc9287e11872"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2905,
+      "sha256": "9ad882b063088b9c74770b92de8215f479739d7f6542c5abd54fe9f0f1c9c0aa"
+    },
+    {
+      "path": "SKILL.md",
+      "bytes": 6228,
+      "sha256": "e3b8861134101238f80abcc1c458e987c249ef9cbdc0ed0036135099ca54de55"
+    },
+    {
+      "path": "architecture.schema.json",
+      "bytes": 8162,
+      "sha256": "4f2c045386fced873b9428e5a7ba25ed98897e15195b9e47112891ce5bdc890c"
+    },
+    {
+      "path": "assets/fonts/NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    {
+      "path": "assets/hdri/studio.hdr",
+      "bytes": 1615248,
+      "sha256": "e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45"
+    },
+    {
+      "path": "assets/licenses/gsap.txt",
+      "bytes": 4603,
+      "sha256": "b6933f3af67064e54f92a00a975d93c073b51b90903e084d77162103de2af55f"
+    },
+    {
+      "path": "assets/licenses/kenney.txt",
+      "bytes": 614,
+      "sha256": "bc0de1a0742cb490f9ed4bae0bd284286ebb27e23149b9917c7d8c0d590b8b29"
+    },
+    {
+      "path": "assets/licenses/noto.txt",
+      "bytes": 4388,
+      "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"
+    },
+    {
+      "path": "assets/licenses/polyhaven.html",
+      "bytes": 72324,
+      "sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+    },
+    {
+      "path": "assets/licenses/three.txt",
+      "bytes": 1102,
+      "sha256": "5d5dad8147523d59bc15cca838ae0bdaae7075230ec49132c551a1d18e7b3412"
+    },
+    {
+      "path": "assets/manifest.json",
+      "bytes": 7980,
+      "sha256": "19fe40e67e22c436bf327e21166c9c7aac42f8a9fe99469d90e9864142e602f0"
+    },
+    {
+      "path": "assets/models/computerKeyboard.glb",
+      "bytes": 3476,
+      "sha256": "9d9135789de2120e9f41ce3f0a56dd1b15f40adcc7888739bb842a2d820da322"
+    },
+    {
+      "path": "assets/models/computerMouse.glb",
+      "bytes": 5868,
+      "sha256": "d3ad1a923f0f7707ef367bb969eb94c9076e211c98c830ba52e133fadc5cdfc0"
+    },
+    {
+      "path": "assets/models/computerScreen.glb",
+      "bytes": 6404,
+      "sha256": "5942cbad29a2d2b956619569926e81d50a4174403d592fece6556e57632dc643"
+    },
+    {
+      "path": "assets/textures/walnut/color.jpg",
+      "bytes": 633330,
+      "sha256": "41fe45f6457bddd4d97627bc610d2980d91683bc521c9692a6c4f2a6a3b05efd"
+    },
+    {
+      "path": "assets/textures/walnut/normal.jpg",
+      "bytes": 441987,
+      "sha256": "da621d3c7e96740313b459a034a30f46271d91a9dcad0c0c657a1485e32d336b"
+    },
+    {
+      "path": "assets/textures/walnut/roughness.jpg",
+      "bytes": 568696,
+      "sha256": "a5c7353aa7886a383b04506145548f9d2ffb9753c3d0b6cf52d972c18e5578d9"
+    },
+    {
+      "path": "assets/vendor/gsap.min.js",
+      "bytes": 72779,
+      "sha256": "c174bfce53a729418d57a8ad8625e7247c793a22fef8e2851e3cfa3de9cd8280"
+    },
+    {
+      "path": "assets/vendor/loaders/GLTFLoader.js",
+      "bytes": 114959,
+      "sha256": "97642d720f16cc9a0c9844934198e4d0c023bea8e89576d0f7545d03b2d103d2"
+    },
+    {
+      "path": "assets/vendor/loaders/HDRLoader.js",
+      "bytes": 12079,
+      "sha256": "0986b578f9acd14cec74e5ee85e07f45e681b40bcd229a601a0391201f9b5ff1"
+    },
+    {
+      "path": "assets/vendor/three.core.min.js",
+      "bytes": 385392,
+      "sha256": "46bfe481f27b838cadea6f536e37c6ad95f6a4daf9f7c8696b32c2828d3722ef"
+    },
+    {
+      "path": "assets/vendor/three.module.min.js",
+      "bytes": 365558,
+      "sha256": "1f065b8bf5eec3a5f73a2c0708990194c4b4658f1b54a2d0b3d0885c3a4b4284"
+    },
+    {
+      "path": "assets/vendor/utils/BufferGeometryUtils.js",
+      "bytes": 37621,
+      "sha256": "5c552223a9309883743b80538d6e9cdb45e3227f30d3ec56fb2c39b46e78d595"
+    },
+    {
+      "path": "assets/vendor/utils/SkeletonUtils.js",
+      "bytes": 11535,
+      "sha256": "b1632a703206c3d830de9fcbe515696770d04b71a15ee6b50afa6d2c3298c86f"
+    },
+    {
+      "path": "examples/architecture-notes.md",
+      "bytes": 726,
+      "sha256": "7236c383aed32fce6e22ccc249608d716c1e4ba01823e73832794749d62025ef"
+    },
+    {
+      "path": "examples/narration.json",
+      "bytes": 375,
+      "sha256": "4fc395533e202dc5acd6383bd0e00d8705e75c5e04771c20b3c609c749657145"
+    },
+    {
+      "path": "examples/pipeline.json",
+      "bytes": 2761,
+      "sha256": "91f811de0a91d117de0fca4736dcfd0d16fc7e2fb09e48343c21daa72e97d3d6"
+    },
+    {
+      "path": "examples/service.json",
+      "bytes": 3174,
+      "sha256": "0050a85cd807285972cd943b568b94f7d09f06874335785f81dbe1a23ab054c8"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 103654,
+      "sha256": "25ee0ac5be31c6cbd1071b5f71ec2523e8cf670d513f82b0f232a919ec32e169"
+    },
+    {
+      "path": "package.json",
+      "bytes": 714,
+      "sha256": "e78c50284cfd65d6c24348f8485bdf29337147c8c5f79c93a2543388c04448fd"
+    },
+    {
+      "path": "references/architecture-contract.md",
+      "bytes": 2219,
+      "sha256": "ac8e290cfeea0fea0d1039b6c948170967f2e96be97008fcd4df3ed99d3125a4"
+    },
+    {
+      "path": "references/azure-tts.md",
+      "bytes": 2586,
+      "sha256": "c3b6729ad1fcb6a6bedf6dc4d5ea3928d72312899c71dd65ea395e35131a395a"
+    },
+    {
+      "path": "references/build-and-verify.md",
+      "bytes": 3540,
+      "sha256": "4d67b4e8980cd734c27ce33535c616cb846dc9691858d4412f824d90a6cabe24"
+    },
+    {
+      "path": "references/source-to-architecture.md",
+      "bytes": 2030,
+      "sha256": "5311f67987e06a3edb23892b5089c3e9ee3ad9bb73cb3ae4b47554372666edbf"
+    },
+    {
+      "path": "references/visual-language.md",
+      "bytes": 2218,
+      "sha256": "640d1945d28c40107657ce539ce5ca1ba7718a71a805c67ccea1c68de26e22a9"
+    },
+    {
+      "path": "runtime/background.js",
+      "bytes": 1233,
+      "sha256": "3ee462533eeb913302ef5182a2857ad2a644e38a1dc972e0ade802d7641b64b8"
+    },
+    {
+      "path": "runtime/components.js",
+      "bytes": 5601,
+      "sha256": "2cb0fb7757a28ace97c6e265cecd9cdf6525fcc820f0f499fe7fb17c5995053e"
+    },
+    {
+      "path": "runtime/motion.js",
+      "bytes": 2354,
+      "sha256": "22f6792ba33ce3f79128186e541d993ea1f03ca65ed22044bdcda5c62a370d42"
+    },
+    {
+      "path": "runtime/scene.js",
+      "bytes": 10477,
+      "sha256": "2c82397831c5b6bf4e87ddff3e6be901bfce110ea11c275b03bee3b9ecd0732c"
+    },
+    {
+      "path": "runtime/style.css",
+      "bytes": 1525,
+      "sha256": "a23e25987dc86cfe1f3b402c87700924c112b4d10d96caaea5a3bea695e0a595"
+    },
+    {
+      "path": "scripts/inspect.mjs",
+      "bytes": 6218,
+      "sha256": "31b89ce4b6468cd7f81bb31133e992eac993dd91916a8651b0295e1297a81d94"
+    },
+    {
+      "path": "scripts/lib.mjs",
+      "bytes": 7009,
+      "sha256": "b7aaa3060127bfce136e8c5e0f123c54254d9adc5a9ac2868a79b4af59f50b4a"
+    },
+    {
+      "path": "scripts/package.mjs",
+      "bytes": 5574,
+      "sha256": "490e319d7ebc66d8f191910dba3702fa49014028a1fdc5fbd254761718fb88d1"
+    },
+    {
+      "path": "scripts/project.mjs",
+      "bytes": 8174,
+      "sha256": "ab67fa616f78b9fddac60442cf627acb5ba6d2bef425a318e4cf07f53d812fa8"
+    },
+    {
+      "path": "scripts/schema.mjs",
+      "bytes": 5466,
+      "sha256": "68057bb33d7859dd5a61b841fb404a17dc3a6e101583ca219af19b6b6bba3d92"
+    },
+    {
+      "path": "scripts/tts.mjs",
+      "bytes": 7314,
+      "sha256": "a0746c811f62fbdc8ca747cc956a54db2f37d0ce7ec5315a51896bbd65b7c599"
+    },
+    {
+      "path": "templates/index.html",
+      "bytes": 1496,
+      "sha256": "58dec92a20d27508653f110b317a47f27270be69d10b906d55ebc37837a8ada5"
+    },
+    {
+      "path": "templates/review.html",
+      "bytes": 3069,
+      "sha256": "d631fa54f099f1abda99bd8be24b5e28ede8f588c0edd43888c030c9f9dab0cb"
+    },
+    {
+      "path": "tests/contracts.test.mjs",
+      "bytes": 4878,
+      "sha256": "ba7827f6f0839b53663e49da4aff659912b3e41f2408b7b32759b517b403c503"
+    }
+  ]
+}

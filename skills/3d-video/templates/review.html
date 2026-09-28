@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>3D架构预览</title>
+<style>body{margin:0;background:#151b2d;color:#e8e8f4;font:16px system-ui,sans-serif}main{max-width:1500px;margin:24px auto;padding:0 24px}h1{font-size:22px}#stage{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;background:#121c33}iframe{width:1920px;height:1080px;border:0;position:absolute;transform-origin:top left}nav{display:flex;align-items:center;gap:14px;margin:18px 0}input{flex:1}button{padding:10px 18px;border:1px solid #8a78b4;background:#453b65;color:white;border-radius:4px;font:inherit}#status{font-size:14px;color:#d1c9de}</style></head>
+<body><main><h1>3D架构预览</h1><div id="stage"><iframe id="frame" src="../index.html" title="架构视频"></iframe></div>
+<nav><button id="play" disabled>加载中</button><button id="restart" disabled>重播</button><input id="seek" type="range" min="0" max="__DURATION__" step=".01" value="0" aria-label="时间"><span id="clock">0 / __DURATION__</span></nav><p id="status">本地模型和材质加载中；无外部网页请求。</p></main>
+<script>
+const iframe=document.querySelector('#frame'),play=document.querySelector('#play'),restart=document.querySelector('#restart'),seek=document.querySelector('#seek'),status=document.querySelector('#status');
+let tl=null,timer=null;
+function fit(){iframe.style.transform='scale('+document.querySelector('#stage').clientWidth/1920+')';}fit();addEventListener('resize',fit);
+function media(time,playing){for(const el of iframe.contentDocument.querySelectorAll('audio')){const start=+el.dataset.start,end=start+(+el.dataset.duration),active=time>=start&&time<end;if(!active||!playing){el.pause();}if(active){const local=time-start;if(!el.seeking&&Math.abs(el.currentTime-local)>.2)el.currentTime=local;if(playing&&el.paused)el.play().catch(e=>{status.textContent='音频播放失败：'+e.message;tl.pause();});}}}
+iframe.onload=()=>{timer=setInterval(()=>{const w=iframe.contentWindow;if(w.architectureFailure){status.textContent=w.architectureFailure;clearInterval(timer);return;}if(!tl&&w.architectureReady){tl=w.architectureTimeline;play.disabled=false;restart.disabled=false;play.textContent='播放';status.textContent='可播放、暂停或直接拖动。修改JSON后重新build并刷新。';}if(tl){seek.value=tl.time();document.querySelector('#clock').textContent=tl.time().toFixed(1)+' / __DURATION__';media(tl.time(),tl.isActive());if(!tl.isActive())play.textContent='播放';}},70);};
+play.onclick=()=>{if(tl.isActive()){tl.pause();play.textContent='播放';}else{if(tl.time()>=__DURATION__-.05)tl.pause(0);tl.play();play.textContent='暂停';media(tl.time(),true);}};
+restart.onclick=()=>{tl.play(0);play.textContent='暂停';};
+seek.oninput=()=>{if(tl){tl.pause();iframe.contentWindow.renderArchitectureAt(+seek.value);media(+seek.value,false);}};
+addEventListener('pagehide',()=>clearInterval(timer));
+</script></body></html>

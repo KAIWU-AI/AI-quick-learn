@@ -1,0 +1,15 @@
+@font-face{font-family:ArchitectureSans;src:url("assets/fonts/NotoSansSC.ttf") format("truetype");font-weight:100 900;font-display:block}
+*{box-sizing:border-box}html,body{margin:0;background:#121c33;font-family:ArchitectureSans,sans-serif}
+#architecture{position:relative;width:1920px;height:1080px;overflow:hidden}
+#backdrop,#world{position:absolute;inset:0;width:1920px;height:1080px}
+#header{position:absolute;left:76px;top:34px;width:1768px;display:flex;gap:25px;align-items:center}
+#header b{font-size:30px;line-height:1.5;color:#292436;background:#f6f5fa;padding:3px 12px;border-radius:4px}
+#header span{font-size:18px;color:#3d354c;background:#f6f5fa;padding:4px 10px}
+#labels{position:absolute;inset:0;pointer-events:none}
+.node-label{position:absolute;left:0;top:0;width:220px;min-height:70px;text-align:center}
+.node-label b{font-size:26px;line-height:1.4;display:block;font-weight:700}
+.node-label span{font-size:19px;line-height:1.5;display:block}
+.node-label b,.node-label span,.node-label i{width:max-content;max-width:220px;margin:0 auto;color:#201e2f;background:rgba(249,249,252,.98);padding:1px 5px;border-radius:3px}
+.node-label i{font-size:15px;display:block;font-style:normal;border:1px dashed #987540}
+#flow-status{position:absolute;left:76px;bottom:33px;max-width:1768px;min-height:40px;font-size:24px;line-height:1.5;color:#292436;background:#f6f5fa;padding:1px 12px}
+#error{display:none;position:absolute;inset:180px 100px;background:#fff5f5;color:#8b2424;padding:50px;font-size:28px}

@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "path": "fonts/NotoSansSC.ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+      "source": "https://github.com/google/fonts/tree/a85815a42757630ce188fdad368c2dfc444d4773/ofl/notosanssc",
+      "revision": "a85815a42757630ce188fdad368c2dfc444d4773",
+      "license": "OFL-1.1",
+      "evidence": "licenses/noto.txt",
+      "modified": false
+    },
+    {
+      "path": "hdri/studio.hdr",
+      "bytes": 1615248,
+      "sha256": "e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45",
+      "source": "https://polyhaven.com/a/studio_small_09",
+      "revision": "1K original files pinned by SHA256",
+      "license": "CC0-1.0",
+      "evidence": "licenses/polyhaven.html",
+      "modified": false
+    },
+    {
+      "path": "licenses/gsap.txt",
+      "bytes": 4603,
+      "sha256": "b6933f3af67064e54f92a00a975d93c073b51b90903e084d77162103de2af55f",
+      "source": "https://registry.npmjs.org/gsap/-/gsap-3.14.2.tgz",
+      "revision": "3.14.2",
+      "license": "GSAP Standard License",
+      "evidence": "licenses/gsap.txt",
+      "modified": true
+    },
+    {
+      "path": "licenses/kenney.txt",
+      "bytes": 614,
+      "sha256": "bc0de1a0742cb490f9ed4bae0bd284286ebb27e23149b9917c7d8c0d590b8b29",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "revision": "Furniture Kit 2.0",
+      "license": "CC0-1.0",
+      "evidence": "licenses/kenney.txt",
+      "modified": true
+    },
+    {
+      "path": "licenses/noto.txt",
+      "bytes": 4388,
+      "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9",
+      "source": "https://github.com/google/fonts/tree/a85815a42757630ce188fdad368c2dfc444d4773/ofl/notosanssc",
+      "revision": "a85815a42757630ce188fdad368c2dfc444d4773",
+      "license": "OFL-1.1",
+      "evidence": "licenses/noto.txt",
+      "modified": true
+    },
+    {
+      "path": "licenses/polyhaven.html",
+      "bytes": 72324,
+      "sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba",
+      "source": "https://polyhaven.com/a/natural_walnut_veneer",
+      "revision": "1K original files pinned by SHA256",
+      "license": "CC0-1.0",
+      "evidence": "licenses/polyhaven.html",
+      "modified": true
+    },
+    {
+      "path": "licenses/three.txt",
+      "bytes": 1102,
+      "sha256": "5d5dad8147523d59bc15cca838ae0bdaae7075230ec49132c551a1d18e7b3412",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": true
+    },
+    {
+      "path": "models/computerKeyboard.glb",
+      "bytes": 3476,
+      "sha256": "9d9135789de2120e9f41ce3f0a56dd1b15f40adcc7888739bb842a2d820da322",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "revision": "Furniture Kit 2.0",
+      "license": "CC0-1.0",
+      "evidence": "licenses/kenney.txt",
+      "modified": false
+    },
+    {
+      "path": "models/computerMouse.glb",
+      "bytes": 5868,
+      "sha256": "d3ad1a923f0f7707ef367bb969eb94c9076e211c98c830ba52e133fadc5cdfc0",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "revision": "Furniture Kit 2.0",
+      "license": "CC0-1.0",
+      "evidence": "licenses/kenney.txt",
+      "modified": false
+    },
+    {
+      "path": "models/computerScreen.glb",
+      "bytes": 6404,
+      "sha256": "5942cbad29a2d2b956619569926e81d50a4174403d592fece6556e57632dc643",
+      "source": "https://kenney.nl/assets/furniture-kit",
+      "revision": "Furniture Kit 2.0",
+      "license": "CC0-1.0",
+      "evidence": "licenses/kenney.txt",
+      "modified": false
+    },
+    {
+      "path": "textures/walnut/color.jpg",
+      "bytes": 633330,
+      "sha256": "41fe45f6457bddd4d97627bc610d2980d91683bc521c9692a6c4f2a6a3b05efd",
+      "source": "https://polyhaven.com/a/natural_walnut_veneer",
+      "revision": "1K original files pinned by SHA256",
+      "license": "CC0-1.0",
+      "evidence": "licenses/polyhaven.html",
+      "modified": false
+    },
+    {
+      "path": "textures/walnut/normal.jpg",
+      "bytes": 441987,
+      "sha256": "da621d3c7e96740313b459a034a30f46271d91a9dcad0c0c657a1485e32d336b",
+      "source": "https://polyhaven.com/a/natural_walnut_veneer",
+      "revision": "1K original files pinned by SHA256",
+      "license": "CC0-1.0",
+      "evidence": "licenses/polyhaven.html",
+      "modified": false
+    },
+    {
+      "path": "textures/walnut/roughness.jpg",
+      "bytes": 568696,
+      "sha256": "a5c7353aa7886a383b04506145548f9d2ffb9753c3d0b6cf52d972c18e5578d9",
+      "source": "https://polyhaven.com/a/natural_walnut_veneer",
+      "revision": "1K original files pinned by SHA256",
+      "license": "CC0-1.0",
+      "evidence": "licenses/polyhaven.html",
+      "modified": false
+    },
+    {
+      "path": "vendor/gsap.min.js",
+      "bytes": 72779,
+      "sha256": "c174bfce53a729418d57a8ad8625e7247c793a22fef8e2851e3cfa3de9cd8280",
+      "source": "https://registry.npmjs.org/gsap/-/gsap-3.14.2.tgz",
+      "revision": "3.14.2",
+      "license": "GSAP Standard License",
+      "evidence": "licenses/gsap.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/loaders/GLTFLoader.js",
+      "bytes": 114959,
+      "sha256": "97642d720f16cc9a0c9844934198e4d0c023bea8e89576d0f7545d03b2d103d2",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/loaders/HDRLoader.js",
+      "bytes": 12079,
+      "sha256": "0986b578f9acd14cec74e5ee85e07f45e681b40bcd229a601a0391201f9b5ff1",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/three.core.min.js",
+      "bytes": 385392,
+      "sha256": "46bfe481f27b838cadea6f536e37c6ad95f6a4daf9f7c8696b32c2828d3722ef",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/three.module.min.js",
+      "bytes": 365558,
+      "sha256": "1f065b8bf5eec3a5f73a2c0708990194c4b4658f1b54a2d0b3d0885c3a4b4284",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/utils/BufferGeometryUtils.js",
+      "bytes": 37621,
+      "sha256": "5c552223a9309883743b80538d6e9cdb45e3227f30d3ec56fb2c39b46e78d595",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    },
+    {
+      "path": "vendor/utils/SkeletonUtils.js",
+      "bytes": 11535,
+      "sha256": "b1632a703206c3d830de9fcbe515696770d04b71a15ee6b50afa6d2c3298c86f",
+      "source": "https://github.com/mrdoob/three.js/tree/2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "revision": "2431a09f46f34c560bc8e44b33be0e567723d5b9",
+      "license": "MIT",
+      "evidence": "licenses/three.txt",
+      "modified": false
+    }
+  ]
+}

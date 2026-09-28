@@ -101,11 +101,13 @@ Demo 2、3 分别生成 `demo2/result.html`、`demo3/result.html`：整体调用
 
 ### 多 Agent 与兼容性
 
-v0.7.1 采用“主 Agent 初筛 → 各子 Agent 独立负责仓库 → 验证后逐个发布”的流程，目标是交付至少一个真实上游 PR，多个合格机会可以分别提交。负责人先读仓库指令、相关技能、Issue 和同类历史 PR，再复现、修复、测试，交回冻结补丁、证据及 PR 草稿，不能停在调研建议。主 Agent 安排独立验证并处理发布授权；一个仓库受阻时继续其他路径或从候补队列补位。本轮所有子 Agent 都无合格结果时，由主 Agent 评估后决定是否转向 HydraLab 兜底。
+v0.7.2 采用“主 Agent 初筛 → 各子 Agent 独立负责仓库 → 验证后逐个发布”的流程，目标是交付至少一个真实上游 PR，多个合格机会可以分别提交。负责人先读仓库指令、相关技能、Issue 和同类历史 PR，再复现、修复、测试，交回冻结补丁、证据及 PR 草稿，不能停在调研建议。主 Agent 安排独立验证并处理发布授权；一个仓库受阻时继续其他路径或从候补队列补位。本轮所有子 Agent 都无合格结果时，由主 Agent 评估后决定是否转向 HydraLab 兜底。
 
 默认最多两个子 Agent 同时运行，包含实现和验证任务。每个负责人有独立的目标仓库工作区；主 Agent 不把不同仓库的修改混在一起。任务交接包含范围、停止条件、实际命令、退出码和证据位置；只有主 Agent 可以按用户授权进行公开写入。没有 PR 且仍有合格路径和预算时继续推进，零 PR 则明确报告未完成，不能把草稿当交付，也不保证上游合并。
 
 运行时明确报告 `multi-agent`、`serial-subagent` 或 `single-agent`。不支持或不允许委派时保留串行流程，但不会声称做过独立 Agent 验证；上下文隔离也不等于文件系统隔离。没有独立工作区时，暂停修改再串行验证。
+
+技能不启用或关闭 sandbox，也不要求子 Agent 的隔离环境持有 GitHub 凭据。主 Agent 提前检查宿主允许的发布入口、账号和认证条件，收到已验证补丁后统一 fork、push、创建并回读 PR。子 Agent 认证受限时，保留成果并交给主 Agent 按宿主审批/用户登录流程恢复发布，不复制密钥、不自动关闭隔离，也不因认证失败直接转入 HydraLab。具体诊断与交接见 [发布环境与认证预检](skills/open-source-contributor/references/pr-workflow.md#发布环境与认证预检)。
 
 Agent Skills 标准定义技能文件格式，**没有统一的 sub-agent 通信协议**；调用遵循各宿主原生接口。Claude 的 `context: fork` 和 `isolation: worktree` 是平台扩展，不写死到通用入口。完整交接约定、隔离策略和官方依据见 [`multi-agent-workflow.md`](skills/open-source-contributor/references/multi-agent-workflow.md)。安装技能不等于启用宿主多 Agent 功能，也不需要额外安装 Agent 通信服务。
 

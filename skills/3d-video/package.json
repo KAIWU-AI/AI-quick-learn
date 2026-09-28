@@ -1,0 +1,21 @@
+{
+  "name": "3d-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "verify": "node scripts/package.mjs verify",
+    "demo": "node scripts/project.mjs create --out work/demo --example service",
+    "preview": "node scripts/project.mjs preview --project work/demo",
+    "check": "node scripts/project.mjs check --project work/demo",
+    "render": "node scripts/project.mjs render --project work/demo --approved"
+  },
+  "devDependencies": {
+    "hyperframes": "0.8.4",
+    "microsoft-cognitiveservices-speech-sdk": "1.48.0",
+    "puppeteer-core": "25.6.0",
+    "pngjs": "7.0.0"
+  }
+}

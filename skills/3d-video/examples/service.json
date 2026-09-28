@@ -1,0 +1,37 @@
+{
+  "version":1,
+  "title":"订单请求的一次旅程",
+  "duration":24,
+  "theme":"space",
+  "sources":[{"id":"example","locator":"architecture-notes.md#service-example","note":"虚构电商教学架构；替换为实际源码证据后用于目标项目。"}],
+  "groups":[{"id":"client","label":"用户端","surface":"wood"},{"id":"backend","label":"服务端","surface":"none"},{"id":"data","label":"数据与计算","surface":"none"}],
+  "nodes":[
+    {"id":"web","label":"用户应用","detail":"发起订单 · 查看结果","type":"client","group":"client","position":[-10,4],"status":"illustrative","evidence":["example"]},
+    {"id":"api","label":"服务入口","detail":"接收请求 · 路由","type":"service","group":"backend","position":[-4,0],"status":"illustrative","evidence":["example"]},
+    {"id":"access","label":"访问控制","detail":"校验身份与权限","type":"gate","group":"backend","position":[3,0],"status":"illustrative","evidence":["example"]},
+    {"id":"orders","label":"订单处理","detail":"校验商品 · 创建订单","type":"agent","group":"backend","position":[10,0],"status":"illustrative","evidence":["example"]},
+    {"id":"database","label":"订单数据","detail":"保存状态 · 查询记录","type":"database","group":"data","position":[10,-8],"status":"illustrative","evidence":["example"]},
+    {"id":"workers","label":"后台计算","detail":"履约通知 · 异步处理","type":"cluster","group":"data","position":[3,-8],"status":"illustrative","evidence":["example"]}
+  ],
+  "edges":[
+    {"id":"web-api","from":"web","to":"api","label":"提交订单","kind":"request","evidence":["example"]},
+    {"id":"api-access","from":"api","to":"access","label":"身份与请求","kind":"request","evidence":["example"]},
+    {"id":"access-orders","from":"access","to":"orders","label":"已授权请求","kind":"request","evidence":["example"]},
+    {"id":"orders-db","from":"orders","to":"database","label":"写入订单","kind":"event","evidence":["example"]},
+    {"id":"db-workers","from":"database","to":"workers","label":"新订单事件","kind":"event","evidence":["example"]},
+    {"id":"orders-web","from":"orders","to":"web","label":"订单结果","kind":"result","via":[[10,0.8,7],[-6,0.8,7]],"evidence":["example"]}
+  ],
+  "flows":[
+    {"id":"request-one","edges":["web-api","api-access","access-orders"],"start":2,"end":10},
+    {"id":"write-and-work","edges":["orders-db","db-workers"],"start":10,"end":16},
+    {"id":"response","edges":["orders-web"],"start":16,"end":21}
+  ],
+  "camera":[
+    {"time":0,"targets":["web","api","access","orders","database","workers"],"yaw":0.2,"pitch":0.7},
+    {"time":4,"targets":["web","api"],"yaw":0.15,"pitch":0.55,"distance":26},
+    {"time":9,"targets":["api","access","orders"],"yaw":1.25,"pitch":0.33,"distance":30},
+    {"time":14,"targets":["orders","database","workers"],"yaw":0.18,"pitch":0.65,"distance":28},
+    {"time":20,"targets":["web","api","access","orders","database","workers"],"yaw":0.25,"pitch":0.72},
+    {"time":24,"targets":["web","api","access","orders","database","workers"],"yaw":0.25,"pitch":0.72}
+  ]
+}
