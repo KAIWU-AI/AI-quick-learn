@@ -11,10 +11,23 @@ import {speechPlan,speechCredentials,checkWordEvents,azureSynthesize} from '../s
 import {zipFiles,whitelist,audit} from '../scripts/package.mjs';
 test('source package is complete, licensed and portable',()=>{
   const names=whitelist();
+  assert.ok(names.includes('LICENSES.md'));
   assert.ok(names.includes('assets/licenses/three.txt'));
   assert.ok(names.includes('assets/licenses/gsap.txt'));
   assert.ok(!names.some(name=>name.startsWith('evidence/')));
   audit(names);
+});
+for(const example of ['service','pipeline'])test(`create ${example} preserves licenses and completes the project`,()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'architecture-create-test-'));
+  const output=path.join(dir,'project');
+  try{
+    const config=create(output,example);
+    assert.deepEqual(fs.readFileSync(path.join(output,'LICENSES.md')),fs.readFileSync(path.join(skillRoot,'LICENSES.md')));
+    assert.ok(fs.existsSync(path.join(output,'hyperframes.json')));
+    assert.ok(fs.existsSync(path.join(output,'index.html')));
+    assert.equal(readJson(path.join(output,'build.json')).status,'built');
+    assert.equal(build(output).duration,config.duration);
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
 const fixture=()=>readJson(path.join(skillRoot,'examples','service.json'));
 const fails=fn=>{const c=fixture();fn(c);assert.throws(()=>validate(c));};

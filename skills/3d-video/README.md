@@ -36,7 +36,7 @@ Linux/macOS使用同样的Node命令；Windows文档可使用反斜杠。**ZIP�
 - `scripts/tts.mjs`：可审阅SSML、调用者环境凭据、逐段Azure合成、词边界、实测时长和缓存；[接入说明](references/azure-tts.md)。
 - 源码包不附历史渲染证据；生成工程中的验证记录和画面需要在使用者环境中实际产生，不能将单元测试通过当作渲染通过。
 
-技能级许可证说明待维护者整理；随包第三方资源的原始许可证和版权声明保留在 `assets/licenses/`，不能将这些资源统一视作 MIT。
+本技能自有代码采用仓库的 MIT License，完整原文及适用边界见 [LICENSES.md](LICENSES.md)，该文件随独立 ZIP 和 create 生成工程一并提供。第三方资源分别遵循 `assets/licenses/` 中的原始许可：Three.js 为 MIT、Noto 字体为 OFL-1.1、Kenney 与 Poly Haven 资源为 CC0；GSAP 为 GSAP Standard License（不是 MIT，须遵守其用途限制）。不得将整包第三方资源统一标记为 MIT。
 
 **适用任意代码架构的表达，不等于一键理解任意源码。**阅读源代码、确定边界和选择关键节点是技能执行步骤；渲染器接收结构化JSON，不执行被分析项目，不上传代码。
 

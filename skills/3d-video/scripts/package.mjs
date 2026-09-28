@@ -3,7 +3,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import {fileURLToPath} from 'node:url';
 import {skillRoot,files,readJson,writeJson,sha,parseOptions} from './lib.mjs';
-export const includeRoots=['SKILL.md','README.md','ASSETS.md','package.json','package-lock.json','.gitignore','.gitattributes','architecture.schema.json','assets','runtime','scripts','templates','references','examples','tests'];
+export const includeRoots=['SKILL.md','README.md','LICENSES.md','ASSETS.md','package.json','package-lock.json','.gitignore','.gitattributes','architecture.schema.json','assets','runtime','scripts','templates','references','examples','tests'];
 export function whitelist(){
   return includeRoots.flatMap(name=>{
     const p=path.join(skillRoot,name);if(!fs.existsSync(p))throw new Error('Missing package payload '+name);

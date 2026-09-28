@@ -18,9 +18,14 @@
       "sha256": "99058da3b4557561671b7c986389cc4761521e334b16a0d1940adc9287e11872"
     },
     {
+      "path": "LICENSES.md",
+      "bytes": 2625,
+      "sha256": "a9e61509e13f06f95f5946e8e2289d95493cbb5b19c782b1eb032acccc55ce40"
+    },
+    {
       "path": "README.md",
-      "bytes": 2905,
-      "sha256": "9ad882b063088b9c74770b92de8215f479739d7f6542c5abd54fe9f0f1c9c0aa"
+      "bytes": 3185,
+      "sha256": "8a30f559f8b89f632aebe907896915c59e318b2f7490c046baaadb80b6257678"
     },
     {
       "path": "SKILL.md",
@@ -229,8 +234,8 @@
     },
     {
       "path": "scripts/package.mjs",
-      "bytes": 5574,
-      "sha256": "490e319d7ebc66d8f191910dba3702fa49014028a1fdc5fbd254761718fb88d1"
+      "bytes": 5588,
+      "sha256": "4099e7f69c9bf2c1c13485d410ae7efa2602c77c34ac031ff9be53a5839bfa2a"
     },
     {
       "path": "scripts/project.mjs",
@@ -259,8 +264,8 @@
     },
     {
       "path": "tests/contracts.test.mjs",
-      "bytes": 4878,
-      "sha256": "ba7827f6f0839b53663e49da4aff659912b3e41f2408b7b32759b517b403c503"
+      "bytes": 5671,
+      "sha256": "39d937830bde22c6e714d673aa5dabd096c86c24db8ced41630573ddbf1a1b1e"
     }
   ]
 }
