@@ -10,9 +10,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 class StandaloneLicenseTests(unittest.TestCase):
     def test_contributor_archive_preserves_license_and_notice(self):
         skill = ROOT / "skills" / "open-source-contributor"
-        expected_notice = (ROOT / "NOTICE.md").read_bytes().split(
+        notice = (ROOT / "NOTICE.md").read_bytes()
+        newline = b"\r\n" if b"\r\n" in notice else b"\n"
+        expected_notice = notice.split(
             "## AI 基础 Demo 的教学参考".encode()
-        )[0].rstrip() + b"\n"
+        )[0].rstrip() + newline
         with tempfile.TemporaryDirectory() as directory:
             archive = pathlib.Path(directory) / "contributor.zip"
             with zipfile.ZipFile(archive, "w") as bundle:
